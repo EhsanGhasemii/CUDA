@@ -7,6 +7,12 @@
 // additional libraries
 //#include "cuda_main.h"
 
+void my_fill(double* data, int size) {
+    for (int i=0; i<size; ++i)
+        data[i] = 0;
+}
+
+
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
     , ui(new Ui::MainWindow)
@@ -28,6 +34,15 @@ MainWindow::MainWindow(QWidget *parent)
     s(temp++,0)=1;
     s(temp++,0)=-1;
     s(temp++,0)=1;
+
+
+
+	////
+	alpha = mat(1, 1); 
+	alpha(0,0) = 1.9;
+	//alpha(1,0) = 1.8;
+
+
 
     plotter = new QCustomPlot;
     plotter->addGraph();
@@ -58,26 +73,20 @@ void MainWindow::on_pushButton_clicked()
     File_Q->open(QIODevice::ReadOnly);
 
 
-    readLine();
-}
-
-void MainWindow::on_pushButton_2_clicked()
-{
-    readLine();
-}
+	// start y_noisy collection from 0
+	my_indx = 0; 
 
 
-void MainWindow::readLine()
-{
-	// Get the ending timepoint
-    auto start = std::chrono::high_resolution_clock::now();
+	// Get the starting timepoint
+    auto start1 = std::chrono::high_resolution_clock::now();
+
 
     if(File_I != nullptr) {
 
         if(File_I ->isOpen() && File_Q->isOpen()) {
 
 			// modifying ============================
-            //while (!File_I->atEnd() && !File_Q->atEnd()) {
+            while (!File_I->atEnd() && !File_Q->atEnd()) {
 			// ======================================
 
             QString str_I = File_I->readLine();
@@ -92,34 +101,120 @@ void MainWindow::readLine()
                 for (int var =0; var < ls_I.count(); ++var) {
                     y_noisy.at(var) = cx_double(ls_I.at(var).toDouble(),ls_Q.at(var).toDouble());
                 }
+				y_noisy2.push_back(y_noisy); 
+
+            }		// if(ls_I.count() == ls_Q.count())
+
+			// modifying =======================================
+			}		// while
+			// =================================================
+        }			// if(File_I ->isOpen() && File_Q->isOpen()) {
+    }				// if(File_I != nullptr) {
 
 
-                ////
-                mat alpha(2,1);
-                alpha(0,0) = 1.9;
-                alpha(1,0) = 1.8;
+	// Get the ending timepoint
+    auto stop1 = std::chrono::high_resolution_clock::now();
+
+	// calculate time processing
+	auto duration1 = std::chrono::duration_cast<std::chrono::microseconds>(stop1 - start1);
+	std::cout << "Reading duration time: " << duration1.count() << " microseconds" << std::endl;
+	std::cout << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%" << std::endl; 
+
+
+
+	// start coding CUDA =============================
+	
+	// allocate memory in CPU for calculation
+	double* X_real; 
+	double* X_imag; 
+	double* R_real; 
+	double* R_imag;
+	double* Ss_real; 
+	double* Ss_imag; 
+	double* s_real; 
+	double* s_imag;
+	double* alpha_real; 
+
+	double* output; 
+
+
+
+	// prepare our GPU format data
+	// convert cx_mat of armadillo library to ordinary arrays. 
+	fun1(s, 
+		 y_noisy2[0], 
+		 13, 
+		 alpha, 
+		 1e-5, 
+		 &X_real, 
+		 &X_imag, 
+		 &R_real, 
+		 &R_imag,
+		 &Ss_real,
+		 &Ss_imag,
+		 &s_real,
+		 &s_imag,
+		 &alpha_real,
+		 &output
+		 );
+
+
+	// main GPU kernel
+	gpuKernel(X_real,
+			  X_imag,
+			  R_real,
+			  R_imag,
+			  Ss_real,
+			  Ss_imag,
+			  s_real,
+			  s_imag, 
+			  alpha_real,
+			  output
+			  );
+
+	// free the memory that we use
+	free(X_real); 
+	free(X_imag);
+	free(R_real); 
+	free(R_imag);
+	free(Ss_real); 
+	free(Ss_imag); 
+	free(s_real); 
+	free(s_imag); 
+	free(alpha_real); 
+
+
+	// ===============================================
+
+
+
+
+    readLine();
+}
+
+void MainWindow::on_pushButton_2_clicked()
+{
+	my_indx ++; 
+    readLine();
+}
+
+
+void MainWindow::readLine()
+{
+	// Get the ending timepoint
+    auto start = std::chrono::high_resolution_clock::now();
+
+	std::cout << "indx: " << my_indx << std::endl;
+	std::cout << "y_noisy size: " << y_noisy2.size() << std::endl; 
+	// exclude our target y_noisy
+	y_noisy = y_noisy2[my_indx]; 
+
+
+   
+
 
 				// modifying ====================================
-				/*std::cout << "alpha : " << std::endl; 
-				for(int i=0; i<alpha.n_rows; i++){
-					for(int j=0; j<alpha.n_cols; j++){
-						std::cout << "alpha(" << i << ", " << j << "): ";
-						std::cout << alpha(i,j) << "\t";
-					}
-					std::cout << std::endl;
-				}
-
-				std::cout << " ------ " << std::endl; 
-				std::cout << "s : " << std::endl; 
-				for(int i=0; i<s.n_rows; i++){
-					for(int j=0; j<s.n_cols; j++){
-						std::cout << "s(" << i << ", " << j << "): ";
-						std::cout << s(i,j) << "\t";
-					}
-					std::cout << std::endl;
-				}
-
-				
+				/*
 				std::cout << " ------ " << std::endl; 
 				std::cout << "y noisy : " << std::endl; 
 				for(int i=0; i<y_noisy.n_rows; i++){
@@ -135,7 +230,7 @@ void MainWindow::readLine()
 
 
 
-                /*General_APC apc;
+                General_APC apc;
                 MatchFilter mf;
 
                 cx_mat result_apc = apc.algorithm(s, y_noisy, 13, alpha, 1e-5);
@@ -143,37 +238,23 @@ void MainWindow::readLine()
 
 
                 cx_mat result_apc2 = apc.algorithm2(s, y_noisy, 13, alpha, 1e-5);
-                cx_mat result_mf2 = mf.algorithm(s, y_noisy, 13);*/
+                cx_mat result_mf2 = mf.algorithm(s, y_noisy, 13);
 
 				//std::cout << "size of result_apc: " << result_apc.size() << std::endl;
 				//std::cout << "size of result_mf: " << result_mf.size() << std::endl; 
 				
 
-				cx_mat result_apc = zeros<cx_mat>(238, 1);
-				cx_mat result_mf = zeros<cx_mat>(239, 1);
-				
-
 
 
 				// Check if the two matrices are equal
-				/*if(arma::approx_equal(result_apc, result_apc2, "absdiff", 0.0001)) {
+				if(arma::approx_equal(result_apc, result_apc2, "absdiff", 0.0001)) {
 					std::cout << "The matrices are equal." << std::endl;
 				} else {
 					std::cout << "The matrices are not equal." << std::endl;
-				}*/
-
-				// start coding CUDA =============================
-				gpuKernel(); 
-				// ===============================================
+				}
 
 
-				// modifying ==================================
-				// lets try with CUDA
-				/*struct cudaDeviceProp p; 
-				cudaGetDeviceProperties(&p, 0);
-				printf("Device Name: %s\n", p.name);*/
 
-				// ============================================
 
 
 				// modifying ==================================
@@ -276,22 +357,14 @@ void MainWindow::readLine()
                 plotter->show();
                 //
 
-            }		// if(ls_I.count() == ls_Q.count())
 
-			// modifying =======================================
-			//}		// while
-			// =================================================
-
-
-
-
-        }			// if(File_I ->isOpen() && File_Q->isOpen()) {
-    }				// if(File_I != nullptr) {
 
 
 	
 	// Get the ending timepoint
     auto stop = std::chrono::high_resolution_clock::now();
+
+
 	// calculate time processing
 	auto duration = std::chrono::duration_cast<std::chrono::microseconds>(stop - start);
 	std::cout << "Big Time: " << duration.count() << " microseconds" << std::endl;

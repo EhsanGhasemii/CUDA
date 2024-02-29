@@ -50,6 +50,7 @@ cx_mat General_APC::algorithm(cx_mat s, cx_mat  y_noisy, double N, mat alpha, do
 	/*std::cout << " ------ " << std::endl; 
 	std::cout << "M : " << M << std::endl;
 	std::cout << "alpha size : " << alpha.size() << std::endl; */
+	
 	// ===========================================
 
 
@@ -283,19 +284,18 @@ cx_mat General_APC::algorithm2(cx_mat s, cx_mat  y_noisy, double N, mat alpha, d
     }
 
 	// modifying ====================================================
-	std::vector<arma::cx_mat> Ss(25);                   // size: 25 * 13 * 13
+	std::vector<arma::cx_mat> Ss(25);
 	for(int k = 0; k < 2*N-1; k++) {
         Ss[k] = S.col(k) * S.col(k).t(); 
     }
 	// =============================================================
 
-
-    cx_mat sum_s = zeros<cx_mat>(N,N);                  // size: 13 * 13
+    cx_mat sum_s = zeros<cx_mat>(N,N);
     for (int var = 0; var < 2*N-1; ++var) {
         sum_s = sum_s + S.col(var) * S.col(var).t();
     }
 
-    cx_mat W_int = inv<cx_mat>(sum_s)*s;                // size: 13 * 1
+    cx_mat W_int = inv<cx_mat>(sum_s)*s;
     cx_mat temp_X = zeros<cx_mat>(y_noisy.size()-(N-1),1);
 
     for (int var = 0; var < y_noisy.size()-(N-1) - 1; ++var) {
@@ -307,47 +307,15 @@ cx_mat General_APC::algorithm2(cx_mat s, cx_mat  y_noisy, double N, mat alpha, d
 
 
 
-	// modifying ================================= 
-	/*std::cout << " ------ " << std::endl; 
-	std::cout << "X : " << std::endl; 
-	for(int i=0; i<X.n_rows; i++){
-		for(int j=0; j<X.n_cols; j++){
-			std::cout << "X(" << i << ", " << j << "): ";
-			std::cout << X(i,j) << "\t";
-		}
-		std::cout << std::endl;
-	}*/
-	// ===========================================
-
-
-
-
 
     // Get the starting timepoint
 	auto start = std::chrono::high_resolution_clock::now();
 
     for (int j = 0; j < M; ++j) {									// 2x
         temp_X = zeros<cx_mat>(1,X.size()-2*N+2);
-		cx_mat rho = elementwisePow(X, alpha(j,0));
-
-
-
-		// modifying ================================= 
-		/*std::cout << " ------ " << std::endl; 
-		std::cout << "rho : " << std::endl; 
-		for(int i=0; i<rho.n_rows; i++){
-			for(int j=0; j<rho.n_cols; j++){
-				std::cout << "rho(" << i << ", " << j << "): ";
-				std::cout << rho(i,j) << "\t";
-			}
-			std::cout << std::endl;
-		}*/
-		// ===========================================
-
-
-
-
-        for (int i = N-1; i < X.size()-N+1; ++i) {  // upper: X.size()-N+1  // 262x and 238x
+        cx_mat rho = elementwisePow(X, alpha(j,0));
+		
+        for (int i = N-1; i < X.size()-N+1; ++i) {					// 262x and 238x
             //cx_mat temp_rho = rho.submat(i-N+1,0,i+N-1,0);
             cx_mat C = zeros<cx_mat>(N,N);
 
@@ -356,22 +324,6 @@ cx_mat General_APC::algorithm2(cx_mat s, cx_mat  y_noisy, double N, mat alpha, d
             for (int k = 0; k < 2*N-1; ++k) {						// 25x
                 C = rho(i-N+1+k,0)*Ss[k] + C;
             }
-
-
-			// modifying ================================= 
-			if (i == 14) {
-				std::cout << " ------ " << std::endl; 
-				std::cout << "C : " << std::endl; 
-				for(int i=0; i<C.n_rows; i++){
-					for(int j=0; j<C.n_cols; j++){
-						std::cout << "C(" << i << ", " << j << "): ";
-						std::cout << C(i,j) << "\t";
-					}
-					std::cout << std::endl;
-				}
-			}
-			// ===========================================
-
 
 			// time2
 			auto time2 = std::chrono::high_resolution_clock::now();

@@ -57,7 +57,8 @@ SOURCES       = Plotters/qcustomplot.cpp \
 		src/input.cpp \
 		src/mainwindow.cpp \
 		src/matchfilter.cpp \
-		src/general_apc.cpp moc_qcustomplot.cpp \
+		src/general_apc.cpp \
+		src/gpuFunctions.cpp moc_qcustomplot.cpp \
 		moc_jcustomplot.cpp \
 		moc_mainwindow.cpp
 OBJECTS       = cuda_objects/cuda_main_cuda.o \
@@ -67,6 +68,7 @@ OBJECTS       = cuda_objects/cuda_main_cuda.o \
 		mainwindow.o \
 		matchfilter.o \
 		general_apc.o \
+		gpuFunctions.o \
 		moc_qcustomplot.o \
 		moc_jcustomplot.o \
 		moc_mainwindow.o
@@ -170,12 +172,14 @@ DIST          = /usr/lib/x86_64-linux-gnu/qt5/mkspecs/features/spec_pre.prf \
 		include/matchfilter.h \
 		include/cuda_main.h \
 		include/gpuerrors.h \
-		include/gputimer.h Plotters/qcustomplot.cpp \
+		include/gputimer.h \
+		include/gpuFunctions.h Plotters/qcustomplot.cpp \
 		Plotters/jcustomplot.cpp \
 		src/input.cpp \
 		src/mainwindow.cpp \
 		src/matchfilter.cpp \
-		src/general_apc.cpp
+		src/general_apc.cpp \
+		src/gpuFunctions.cpp
 QMAKE_TARGET  = output
 DESTDIR       = 
 TARGET        = output
@@ -392,8 +396,8 @@ distdir: FORCE
 	$(COPY_FILE) --parents $(DIST) $(DISTDIR)/
 	$(COPY_FILE) --parents src/cuda_main.cu $(DISTDIR)/
 	$(COPY_FILE) --parents /usr/lib/x86_64-linux-gnu/qt5/mkspecs/features/data/dummy.cpp $(DISTDIR)/
-	$(COPY_FILE) --parents Plotters/qcustomplot.h Plotters/jcustomplot.h include/mainwindow.h include/general_apc.h include/matchfilter.h include/cuda_main.h include/gpuerrors.h include/gputimer.h $(DISTDIR)/
-	$(COPY_FILE) --parents Plotters/qcustomplot.cpp Plotters/jcustomplot.cpp src/input.cpp src/mainwindow.cpp src/matchfilter.cpp src/general_apc.cpp $(DISTDIR)/
+	$(COPY_FILE) --parents Plotters/qcustomplot.h Plotters/jcustomplot.h include/mainwindow.h include/general_apc.h include/matchfilter.h include/cuda_main.h include/gpuerrors.h include/gputimer.h include/gpuFunctions.h $(DISTDIR)/
+	$(COPY_FILE) --parents Plotters/qcustomplot.cpp Plotters/jcustomplot.cpp src/input.cpp src/mainwindow.cpp src/matchfilter.cpp src/general_apc.cpp src/gpuFunctions.cpp $(DISTDIR)/
 	$(COPY_FILE) --parents files/mainwindow.ui $(DISTDIR)/
 
 
@@ -453,6 +457,7 @@ moc_mainwindow.cpp: include/mainwindow.h \
 		Plotters/qcustomplot.h \
 		include/general_apc.h \
 		include/cuda_main.h \
+		include/gpuFunctions.h \
 		moc_predefs.h \
 		/usr/lib/qt5/bin/moc
 	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/ehsan/GO_AHEAD/Projects/CUDA/my_codes/test8/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-g++ -I/home/ehsan/GO_AHEAD/Projects/CUDA/my_codes/test8 -I/home/ehsan/GO_AHEAD/Projects/CUDA/my_codes/test8 -I/usr/include -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I/usr/include/c++/11 -I/usr/include/x86_64-linux-gnu/c++/11 -I/usr/include/c++/11/backward -I/usr/lib/gcc/x86_64-linux-gnu/11/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include include/mainwindow.h -o moc_mainwindow.cpp
@@ -488,13 +493,15 @@ jcustomplot.o: Plotters/jcustomplot.cpp Plotters/jcustomplot.h \
 input.o: src/input.cpp include/mainwindow.h \
 		Plotters/qcustomplot.h \
 		include/general_apc.h \
-		include/cuda_main.h
+		include/cuda_main.h \
+		include/gpuFunctions.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o input.o src/input.cpp
 
 mainwindow.o: src/mainwindow.cpp include/mainwindow.h \
 		Plotters/qcustomplot.h \
 		include/general_apc.h \
 		include/cuda_main.h \
+		include/gpuFunctions.h \
 		include/ui_mainwindow.h \
 		include/matchfilter.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o mainwindow.o src/mainwindow.cpp
@@ -504,6 +511,9 @@ matchfilter.o: src/matchfilter.cpp include/matchfilter.h
 
 general_apc.o: src/general_apc.cpp include/general_apc.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o general_apc.o src/general_apc.cpp
+
+gpuFunctions.o: src/gpuFunctions.cpp include/gpuFunctions.h
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o gpuFunctions.o src/gpuFunctions.cpp
 
 moc_qcustomplot.o: moc_qcustomplot.cpp 
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o moc_qcustomplot.o moc_qcustomplot.cpp

@@ -6,6 +6,7 @@
 #include <Plotters/qcustomplot.h>
 #include "general_apc.h"
 #include "cuda_main.h"
+#include "gpuFunctions.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
@@ -30,6 +31,15 @@ private:
 
     QCustomPlot *plotter;
     cx_mat y_noisy,s;
+
+	// modifying ======================
+	std::vector<arma::cx_mat> y_noisy2;
+	int my_indx;
+	mat alpha; 
+	// ================================
+
+
+
     void readLine();
 };
 #endif // MAINWINDOW_H

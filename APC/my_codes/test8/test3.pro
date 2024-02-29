@@ -53,7 +53,7 @@ SOURCES += \
 	src/mainwindow.cpp \
 	src/matchfilter.cpp \ 
 	src/general_apc.cpp \
-#	src/abas.cpp
+	src/gpuFunctions.cpp
 
 
 HEADERS += \
@@ -65,7 +65,8 @@ HEADERS += \
 	include/matchfilter.h \
 	include/cuda_main.h \
 	include/gpuerrors.h \
-	include/gputimer.h
+	include/gputimer.h \ 
+	include/gpuFunctions.h
 
 FORMS += \
     files/mainwindow.ui
