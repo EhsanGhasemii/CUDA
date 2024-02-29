@@ -11,3 +11,10 @@ qmake -project
 qmake
 make
 ```
+
+## Inverse matrix calculation with cuda
+[link](https://github.com/ZhengzhongSun/Matrix-Inversion-with-CUDA?tab=readme-ov-file)
+
+
+
+
