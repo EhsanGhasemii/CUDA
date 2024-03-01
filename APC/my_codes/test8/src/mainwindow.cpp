@@ -184,8 +184,38 @@ void MainWindow::on_pushButton_clicked()
 	free(alpha_real); 
 
 
-	// ===============================================
+	// modifying =================================
+	cx_mat help = zeros<cx_mat>(3, 3);
+	help(0, 0) = std::complex<double>(1, 1); 
+	help(0, 1) = 1; 
+	help(0, 2) = 1; 
+	help(1, 0) = 2; 
+	help(1, 1) = 4; 
+	help(1, 2) = 6; 
+	help(2, 0) = 3; 
+	help(2, 1) = 6; 
+	help(2, 2) = 12; 
 
+	std::cout << " 555555555555555555555 " << std::endl; 
+	std::cout << "help : " << std::endl;						// size: 13 * 13
+	for(int i=0; i<help.n_rows; i++){
+		for(int j=0; j<help.n_cols; j++){
+			std::cout << "help(" << i << ", " << j << "): ";
+			std::cout << help(i,j) << "\t";
+		}
+		std::cout << std::endl;
+	}
+	cx_mat my_inv = inv(help); 
+	std::cout << "my_inv : " << std::endl;						// size: 13 * 13
+	for(int i=0; i<my_inv.n_rows; i++){
+		for(int j=0; j<my_inv.n_cols; j++){
+			std::cout << "my_inv(" << i << ", " << j << "): ";
+			std::cout << my_inv(i,j) << "\t";
+		}
+		std::cout << std::endl;
+	}
+	std::cout << " 555555555555555555555 " << std::endl;
+	// ===========================================
 
 
 

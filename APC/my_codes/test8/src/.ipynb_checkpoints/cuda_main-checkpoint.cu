@@ -29,15 +29,7 @@ __global__ void matrixInversion(double* inputd,
 								double* outputd, 
 								const int n, 
 								const int m
-								);	
-
-__global__ void complexMatrixInversion(double* input_reald,		// input data is "inputd"
-									   double* input_imagd,
-									   double* output_reald,    // output data is "outputd"
-									   double* output_imagd,
-							           const int n,				// number of matrices is n
-									   const int m		     	// size of each matrix is m*m
-									   );			     		// we suppose input data is squre matrix
+								);		
 void print_matrix(char* name, double* data, int size, int d_shift);
 // ==========================================================
 
@@ -167,62 +159,6 @@ void gpuKernel(double* X_real,
 	HANDLE_ERROR(cudaMemcpy(inversion, inversiond, 3 * 3 * sizeof(double), cudaMemcpyDeviceToHost));
 	// ==================================================================================================
 
-	
-	// complex matrix inversion =========================================================================
-	double* input_real; 
-	double* input_imag;
-
-	double* inv_real;
-	double* inv_imag;
-
-	input_real = (double*)malloc(3 * 3 * sizeof(double)); 
-	input_imag = (double*)malloc(3 * 3 * sizeof(double));
-
-	inv_real = (double*)malloc(3 * 3 * sizeof(double));
-	inv_imag = (double*)malloc(3 * 3 * sizeof(double));
-
-	input_real[0] = 0; 
-	input_real[1] = 0; 
-	input_real[2] = 1; 
-	input_real[3] = 1; 
-	input_real[4] = 2; 
-	input_real[5] = 3; 
-	input_real[6] = 2; 
-	input_real[7] = 5; 
-	input_real[8] = 9;
-	input_imag[0] = 1; 
-	input_imag[1] = 1; 
-	input_imag[2] = 1; 
-	input_imag[3] = 2; 
-	input_imag[4] = 0; 
-	input_imag[5] = 1; 
-	input_imag[6] = 0; 
-	input_imag[7] = 3; 
-	input_imag[8] = 0; 
-
-	double* input_reald;
-	double* input_imagd; 
-
-	double* inv_reald; 
-	double* inv_imagd;
-
-	HANDLE_ERROR(cudaMalloc((void**)&input_reald, 3 * 3 * sizeof(double)));
-	HANDLE_ERROR(cudaMalloc((void**)&input_imagd, 3 * 3 * sizeof(double)));
-
-	HANDLE_ERROR(cudaMalloc((void**)&inv_reald, 3 * 3 * sizeof(double)));
-	HANDLE_ERROR(cudaMalloc((void**)&inv_imagd, 3 * 3 * sizeof(double)));
-
-	HANDLE_ERROR(cudaMemcpy(input_reald, input_real, 3 * 3 * sizeof(double), cudaMemcpyHostToDevice));
-	HANDLE_ERROR(cudaMemcpy(input_imagd, input_imag, 3 * 3 * sizeof(double), cudaMemcpyHostToDevice));
-
-	dimGrid = getDimGrid(1); 
-	dimBlock = getDimBlock(3 * 3); 
-
-	complexMatrixInversion<<< dimGrid, dimBlock >>>(input_reald, input_imagd, inv_reald, inv_imagd, 1, 3); 
-
-	HANDLE_ERROR(cudaMemcpy(inv_real, inv_reald, 3 * 3 * sizeof(double), cudaMemcpyDeviceToHost));
-	HANDLE_ERROR(cudaMemcpy(inv_imag, inv_imagd, 3 * 3 * sizeof(double), cudaMemcpyDeviceToHost));
-	// ==================================================================================================
 
 	// print report
 
@@ -231,17 +167,11 @@ void gpuKernel(double* X_real,
 		char name[20] = "a"; 
 		//print_matrix(name, a		 , n);
 
-		strcpy(name, "input_real"); 
-		print_matrix(name, input_real, 3 * 3, 0); 
+		strcpy(name, "input"); 
+		print_matrix(name, input, 3 * 3, 0); 
 
-		strcpy(name, "input_imag");
-		print_matrix(name, input_imag, 3 * 3, 0); 
-
-		strcpy(name, "inv_real");
-		print_matrix(name, inv_real, 3 * 3, 0); 
-
-		strcpy(name, "inv_imag");
-		print_matrix(name, inv_imag, 3 * 3, 0); 
+		strcpy(name, "inversion");
+		print_matrix(name, inversion, 3 * 3, 0); 
 		
 	}
 
@@ -362,8 +292,8 @@ __global__ void kernelFunc(double* X_reald,
 
 __global__ void matrixInversion(double* inputd,		// input data is "inputd"
 								double* outputd,	// output data is "outputd"
-								const int n,				// number of matrices is n
-								const int m				// size of each matrix is m*m
+								int n,				// number of matrices is n
+								int m				// size of each matrix is m*m
 								) {					// we suppose input data is squre matrix
 
 
@@ -449,146 +379,6 @@ __global__ void matrixInversion(double* inputd,		// input data is "inputd"
 	outputd[i] = out[mat_ind]; 
 }
 
-
-
-
-__global__ void complexMatrixInversion(double* input_reald,		// input data is "inputd"
-									   double* input_imagd,
-									   double* output_reald,    // output data is "outputd"
-									   double* output_imagd,
-							           const int n,			    // number of matrices is n
-									   const int m		     	// size of each matrix is m*m
-									   ) {			     		// we suppose input data is squre matrix
-
-
-	// define our variables
-	__shared__ double out_real[3 * 3];
-	__shared__ double out_imag[3 * 3]; 
-
-	__shared__ double in_real[3 * 3]; 
-	__shared__ double in_imag[3 * 3]; 
-	
-
-	// define index of each thread
-	long long i;
-	i = (blockIdx.z * gridDim.y * gridDim.x) + (blockIdx.y * gridDim.x) + (blockIdx.x);
-	i *= blockDim.z * blockDim.y * blockDim.x;
-	i += (threadIdx.z * blockDim.y * blockDim.x) + (threadIdx.y * blockDim.x) + (threadIdx.x);
-
-
-	// data and thread location
-	int mat_num = i / (m * m); 
-	int mat_ind = i % (m * m); 
-	int mat_row = (i % (m * m)) / m; 
-	int mat_col = (i % (m * m)) % m; 
-
-	// transfer input data to shared memory
-	in_real[mat_ind] = input_reald[i]; 
-	in_imag[mat_ind] = input_imagd[i]; 
-
-
-	// creating eye matrix for gauss jordan elimination
-	if (mat_row == mat_col) {	
-		out_real[mat_ind] = 1.0; 
-		out_imag[mat_ind] = 0.0; 
-	}
-	else {
-		out_real[mat_ind] = 0.0; 
-		out_imag[mat_ind] = 0.0; 
-	}
-
-	// Matrix inversion algorithm main body ======================================== 
-	// we use Gauss Jordan Algorithm
-	// algorithm: part1 - make the input data upper-triangular
-	for (int count1 = 0; count1 < m - 1; ++count1) {
-		
-		// change current row when its pivot is zero
-		if ((in_real[count1 * m + count1] == 0) && (in_imag[count1 * m + count1] == 0)) {
-			int count2 = count1 + 1; 
-			while ((in_real[count2 * m + count1] == 0) && (in_imag[count2 * m + count1] == 0) && (count2 < m)) {
-				++count2;
-			}
-			if(mat_row == count1) {
-				in_real[mat_ind] += in_real[count2 * m + mat_col];
-				in_imag[mat_ind] += in_imag[count2 * m + mat_col]; 
-
-				out_real[mat_ind] += out_real[count2 * m + mat_col]; 
-				out_imag[mat_ind] += out_imag[count2 * m + mat_col]; 
-			}
-			__syncthreads(); 	
-		}
-
-		if (mat_row > count1) {
-			double mul_real = in_real[mat_row * m + count1] * in_real[count1 * m + count1]
-							+ in_imag[mat_row * m + count1] * in_imag[count1 * m + count1];
-			mul_real /= (in_real[count1 * m + count1] * in_real[count1 * m + count1]
-					   + in_imag[count1 * m + count1] * in_imag[count1 * m + count1]); 
-
-			double mul_imag = in_imag[mat_row * m + count1] * in_real[count1 * m + count1]
-							- in_real[mat_row * m + count1] * in_imag[count1 * m + count1];
-			mul_imag /= (in_real[count1 * m + count1] * in_real[count1 * m + count1]
-					   + in_imag[count1 * m + count1] * in_imag[count1 * m + count1]); 
-
-			in_real[mat_ind] -= (mul_real * in_real[count1 * m + mat_col]
-							   - mul_imag * in_imag[count1 * m + mat_col]); 
-			in_imag[mat_ind] -= (mul_real * in_imag[count1 * m + mat_col]
-							   + mul_imag * in_real[count1 * m + mat_col]);
-
-			out_real[mat_ind] -= (mul_real * out_real[count1 * m + mat_col]
-							    - mul_imag * out_imag[count1 * m + mat_col]);
-			out_imag[mat_ind] -= (mul_real * out_imag[count1 * m + mat_col]
-							    + mul_imag * out_real[count1 * m + mat_col]);
-		}
-
-		// wait till all the data is changed
-		__syncthreads(); 
-	}
-
-
-	// algorithm: part2 - make the input data lower-triangular
-	for (int count1 = m - 1; count1 > 0; --count1) {
-		if (mat_row < count1) {
-			double mul_real = in_real[mat_row * m + count1] * in_real[count1 * m + count1]
-							+ in_imag[mat_row * m + count1] * in_imag[count1 * m + count1];
-			mul_real /= (in_real[count1 * m + count1] * in_real[count1 * m + count1]
-					   + in_imag[count1 * m + count1] * in_imag[count1 * m + count1]); 
-
-			double mul_imag = in_imag[mat_row * m + count1] * in_real[count1 * m + count1]
-							- in_real[mat_row * m + count1] * in_imag[count1 * m + count1];
-			mul_imag /= (in_real[count1 * m + count1] * in_real[count1 * m + count1]
-					   + in_imag[count1 * m + count1] * in_imag[count1 * m + count1]); 
-
-			in_real[mat_ind] -= (mul_real * in_real[count1 * m + mat_col]
-							   - mul_imag * in_imag[count1 * m + mat_col]); 
-			in_imag[mat_ind] -= (mul_real * in_imag[count1 * m + mat_col]
-							   + mul_imag * in_real[count1 * m + mat_col]);
-
-			out_real[mat_ind] -= (mul_real * out_real[count1 * m + mat_col]
-							    - mul_imag * out_imag[count1 * m + mat_col]);
-			out_imag[mat_ind] -= (mul_real * out_imag[count1 * m + mat_col]
-							    + mul_imag * out_real[count1 * m + mat_col]);
-		}
-
-		// wait till all the data is changed
-		__syncthreads(); 
-	}
-
-	// algorithm: part3 - normalize input data to create matrix inversion
-	out_real[mat_ind] = (out_real[mat_ind] * in_real[mat_row * m + mat_row]
-					   + out_imag[mat_ind] * in_imag[mat_row * m + mat_row]); 
-	out_real[mat_ind] /= (in_real[mat_row * m + mat_row] * in_real[mat_row * m + mat_row]
-						+ in_imag[mat_row * m + mat_row] * in_imag[mat_row * m + mat_row]);
-
-	out_imag[mat_ind] = (out_imag[mat_ind] * in_real[mat_row * m + mat_row]
-					   - out_real[mat_ind] * in_imag[mat_row * m + mat_row]); 
-	out_imag[mat_ind] /= (in_real[mat_row * m + mat_row] * in_real[mat_row * m + mat_row]
-						+ in_imag[mat_row * m + mat_row] * in_imag[mat_row * m + mat_row]);
-	// ============================================================================
-
-
-	output_reald[i] = out_real[mat_ind]; 
-	output_imagd[i] = out_imag[mat_ind]; 
-}
 
 
 
