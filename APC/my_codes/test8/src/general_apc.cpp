@@ -12,6 +12,7 @@ General_APC::General_APC()
 
 cx_mat General_APC::algorithm(cx_mat s, cx_mat  y_noisy, double N, mat alpha, double sigma)
 {
+	
 
 	// zero padding of y_noisy
 	// input y_noisy is 250 * 1 
@@ -359,17 +360,18 @@ cx_mat General_APC::algorithm2(cx_mat s, cx_mat  y_noisy, double N, mat alpha, d
 
 
 			// modifying ================================= 
-			if (i == 14) {
+			/*if (i == 12) {
+				cx_mat CR = inv(C + R); 
 				std::cout << " ------ " << std::endl; 
-				std::cout << "C : " << std::endl; 
-				for(int i=0; i<C.n_rows; i++){
-					for(int j=0; j<C.n_cols; j++){
-						std::cout << "C(" << i << ", " << j << "): ";
-						std::cout << C(i,j) << "\t";
+				std::cout << "inv(C + R): " << std::endl; 
+				for(int i=0; i<CR.n_rows; i++){
+					for(int j=0; j<CR.n_cols; j++){
+						std::cout << "CR(" << i << ", " << j << "): ";
+						std::cout << CR(i,j) << "\t";
 					}
 					std::cout << std::endl;
 				}
-			}
+			}*/
 			// ===========================================
 
 
@@ -377,9 +379,31 @@ cx_mat General_APC::algorithm2(cx_mat s, cx_mat  y_noisy, double N, mat alpha, d
 			auto time2 = std::chrono::high_resolution_clock::now();
             cx_mat W = inv(C+R)*s*rho(i,0);
 
+
+			// modifying ================================= 
+			if (i == 12) {
+				std::cout << " ------ " << std::endl; 
+				std::cout << "W: " << std::endl; 
+				for(int i=0; i<W.n_rows; i++){
+					for(int j=0; j<W.n_cols; j++){
+						std::cout << "W(" << i << ", " << j << "): ";
+						std::cout << W(i,j) << "\t";
+					}
+					std::cout << std::endl;
+				}
+			}
+			// ===========================================
+
+
 			// time3 
 			auto time3 = std::chrono::high_resolution_clock::now();
             cx_mat t = W.t() * y_noisy.submat(i+(N-1)*(j),0,(j)*(N-1)+i+N-1,0);
+
+			// modifying =================================
+			if (i == 12) {
+				std::cout << "FFinall RResult: " << t << std::endl;
+			}
+			// ===========================================
 
 			// time4 
 			auto time4 = std::chrono::high_resolution_clock::now();

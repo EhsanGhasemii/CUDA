@@ -125,6 +125,8 @@ void MainWindow::on_pushButton_clicked()
 	// start coding CUDA =============================
 	
 	// allocate memory in CPU for calculation
+	double* y_n_real;
+	double* y_n_imag; 
 	double* X_real; 
 	double* X_imag; 
 	double* R_real; 
@@ -135,7 +137,8 @@ void MainWindow::on_pushButton_clicked()
 	double* s_imag;
 	double* alpha_real; 
 
-	double* output; 
+	double* output_real;
+	double* output_imag;
 
 
 
@@ -146,6 +149,8 @@ void MainWindow::on_pushButton_clicked()
 		 13, 
 		 alpha, 
 		 1e-5, 
+		 &y_n_real, 
+		 &y_n_imag, 
 		 &X_real, 
 		 &X_imag, 
 		 &R_real, 
@@ -155,12 +160,15 @@ void MainWindow::on_pushButton_clicked()
 		 &s_real,
 		 &s_imag,
 		 &alpha_real,
-		 &output
+		 &output_real,
+		 &output_imag
 		 );
 
 
 	// main GPU kernel
-	gpuKernel(X_real,
+	gpuKernel(y_n_real,
+			  y_n_imag,
+			  X_real,
 			  X_imag,
 			  R_real,
 			  R_imag,
@@ -169,7 +177,8 @@ void MainWindow::on_pushButton_clicked()
 			  s_real,
 			  s_imag, 
 			  alpha_real,
-			  output
+			  output_real,
+			  output_imag
 			  );
 
 	// free the memory that we use
@@ -185,7 +194,7 @@ void MainWindow::on_pushButton_clicked()
 
 
 	// modifying =================================
-	cx_mat help = zeros<cx_mat>(3, 3);
+	/*cx_mat help = zeros<cx_mat>(3, 3);
 	help(0, 0) = std::complex<double>(1, 1); 
 	help(0, 1) = 1; 
 	help(0, 2) = 1; 
@@ -214,7 +223,7 @@ void MainWindow::on_pushButton_clicked()
 		}
 		std::cout << std::endl;
 	}
-	std::cout << " 555555555555555555555 " << std::endl;
+	std::cout << " 555555555555555555555 " << std::endl;*/
 	// ===========================================
 
 

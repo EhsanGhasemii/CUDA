@@ -12,6 +12,8 @@ void fun1(cx_mat s,
 		double N, 
 		mat alpha, 
 		double sigma,
+		double** y_n_real,
+		double** y_n_imag,
 		double** X_real, 
 		double** X_imag, 
 		double** R_real, 
@@ -21,7 +23,8 @@ void fun1(cx_mat s,
 		double** s_real,
 		double** s_imag,
 		double** alpha_real,
-		double** output
+		double** output_real,
+		double** output_imag
 		); 
 
 

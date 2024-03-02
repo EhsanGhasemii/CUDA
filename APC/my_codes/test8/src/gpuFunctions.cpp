@@ -5,6 +5,8 @@ void fun1(cx_mat s,
 		  double N,
 		  mat alpha,
 		  double sigma,
+		  double** y_n_real,
+		  double** y_n_imag,
 		  double** X_real, 
 		  double** X_imag, 
 		  double** R_real, 
@@ -14,7 +16,8 @@ void fun1(cx_mat s,
 		  double** s_real,
 		  double** s_imag,
 		  double** alpha_real,
-		  double** output
+		  double** output_real,
+		  double** output_imag
 		  ) {
 
 	// zero padding of y_noisy
@@ -64,6 +67,8 @@ void fun1(cx_mat s,
 
 
 	// allocate memory in CPU for calculation
+	*y_n_real = (double*)malloc(y_noisy.n_rows * y_noisy.n_cols * sizeof(double));
+	*y_n_imag = (double*)malloc(y_noisy.n_rows * y_noisy.n_cols * sizeof(double));
 	*X_real  = (double*)malloc(X.n_rows * X.n_cols * sizeof(double));
 	*X_imag  = (double*)malloc(X.n_rows * X.n_cols * sizeof(double));
 	*R_real  = (double*)malloc(R.n_rows * R.n_cols * sizeof(double)); 
@@ -73,7 +78,8 @@ void fun1(cx_mat s,
 	*s_real  = (double*)malloc(s.n_rows * s.n_cols * sizeof(double)); 
 	*s_imag  = (double*)malloc(s.n_rows * s.n_cols * sizeof(double));
 	*alpha_real = (double*)malloc(alpha.size() * sizeof(double)); 
-	*output  = (double*)malloc(262 * 13 * 13 * sizeof(double)); // hard_code: 262, change it in future
+	*output_real  = (double*)malloc(13 * sizeof(double)); // hard_code: 262, change it in future
+	*output_imag  = (double*)malloc(13 * sizeof(double)); // hard_code: 262, ch..
 
 
 	// check size of the variables
@@ -85,7 +91,14 @@ void fun1(cx_mat s,
 	std::cout << "s size: " << s.n_rows * s.n_cols << std::endl; 
 
 
-	// transfering data from armadillo to ordinary arrays to use in GPU kernels
+	// transfering data from armadillo to ordinary arrays to use in GPU kernels	
+	for(int i=0; i<y_noisy.n_rows; ++i){
+		for(int j=0; j<y_noisy.n_cols; ++j){
+			(*y_n_real)[i * X.n_cols + j] = y_noisy(i, j).real();       // flattening the 2D data 
+			(*y_n_imag)[i * X.n_cols + j] = y_noisy(i, j).imag();       // flattening the 2D data
+		}
+	}
+
 	for(int i=0; i<X.n_rows; ++i){
 		for(int j=0; j<X.n_cols; ++j){
 			(*X_real)[i * X.n_cols + j] = X(i, j).real();       // flattening the 2D data 

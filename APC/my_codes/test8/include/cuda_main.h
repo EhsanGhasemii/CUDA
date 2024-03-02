@@ -7,7 +7,9 @@
 
 
 // define our functions
-void gpuKernel(double* X_real,
+void gpuKernel(double* y_n_real,
+			   double* y_n_imag,
+			   double* X_real,
 			   double* X_imag,
 			   double* R_real,
 			   double* R_imag,
@@ -16,7 +18,8 @@ void gpuKernel(double* X_real,
 			   double* s_real,
 			   double* s_imag,
 			   double* alpha_real,
-			   double* output
+			   double* output_real,
+			   double* output_imag
 			   ); 
 //void fill(float* data, int size);
 
