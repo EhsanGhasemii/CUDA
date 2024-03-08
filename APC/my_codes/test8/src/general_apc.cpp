@@ -321,7 +321,7 @@ cx_mat General_APC::algorithm2(cx_mat s, cx_mat  y_noisy, double N, mat alpha, d
 	// ===========================================
 
 
-
+	int sample_test = 12 + 169; 
 
 
     // Get the starting timepoint
@@ -330,22 +330,6 @@ cx_mat General_APC::algorithm2(cx_mat s, cx_mat  y_noisy, double N, mat alpha, d
     for (int j = 0; j < M; ++j) {									// 2x
         temp_X = zeros<cx_mat>(1,X.size()-2*N+2);
 		cx_mat rho = elementwisePow(X, alpha(j,0));
-
-
-
-		// modifying ================================= 
-		/*std::cout << " ------ " << std::endl; 
-		std::cout << "rho : " << std::endl; 
-		for(int i=0; i<rho.n_rows; i++){
-			for(int j=0; j<rho.n_cols; j++){
-				std::cout << "rho(" << i << ", " << j << "): ";
-				std::cout << rho(i,j) << "\t";
-			}
-			std::cout << std::endl;
-		}*/
-		// ===========================================
-
-
 
 
         for (int i = N-1; i < X.size()-N+1; ++i) {  // upper: X.size()-N+1  // 262x and 238x
@@ -358,12 +342,16 @@ cx_mat General_APC::algorithm2(cx_mat s, cx_mat  y_noisy, double N, mat alpha, d
                 C = rho(i-N+1+k,0)*Ss[k] + C;
             }
 
+			// time2
+			auto time2 = std::chrono::high_resolution_clock::now();
+            cx_mat W = inv(C+R)*s*rho(i,0);
+
 
 			// modifying ================================= 
-			/*if (i == 12) {
-				cx_mat CR = inv(C + R); 
+			/*if (i == sample_test) {
+				cx_mat CR = W;
 				std::cout << " ------ " << std::endl; 
-				std::cout << "inv(C + R): " << std::endl; 
+				std::cout << "C+R: " << std::endl; 
 				for(int i=0; i<CR.n_rows; i++){
 					for(int j=0; j<CR.n_cols; j++){
 						std::cout << "CR(" << i << ", " << j << "): ";
@@ -375,33 +363,13 @@ cx_mat General_APC::algorithm2(cx_mat s, cx_mat  y_noisy, double N, mat alpha, d
 			// ===========================================
 
 
-			// time2
-			auto time2 = std::chrono::high_resolution_clock::now();
-            cx_mat W = inv(C+R)*s*rho(i,0);
-
-
-			// modifying ================================= 
-			if (i == 12) {
-				std::cout << " ------ " << std::endl; 
-				std::cout << "W: " << std::endl; 
-				for(int i=0; i<W.n_rows; i++){
-					for(int j=0; j<W.n_cols; j++){
-						std::cout << "W(" << i << ", " << j << "): ";
-						std::cout << W(i,j) << "\t";
-					}
-					std::cout << std::endl;
-				}
-			}
-			// ===========================================
-
-
 			// time3 
 			auto time3 = std::chrono::high_resolution_clock::now();
             cx_mat t = W.t() * y_noisy.submat(i+(N-1)*(j),0,(j)*(N-1)+i+N-1,0);
 
 			// modifying =================================
-			if (i == 12) {
-				std::cout << "FFinall RResult: " << t << std::endl;
+			if (i < X.size()) {
+				std::cout << "i: " << i-12 << " - Finall Result: " << t << std::endl;
 			}
 			// ===========================================
 

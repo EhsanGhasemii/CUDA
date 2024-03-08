@@ -85,29 +85,31 @@ void MainWindow::on_pushButton_clicked()
 
         if(File_I ->isOpen() && File_Q->isOpen()) {
 
-			// modifying ============================
             while (!File_I->atEnd() && !File_Q->atEnd()) {
-			// ======================================
 
-            QString str_I = File_I->readLine();
-            QString str_Q = File_Q->readLine();
+				QString str_I = File_I->readLine();
+				QString str_Q = File_Q->readLine();
 
-            QStringList ls_I = str_I.split(',');
-            QStringList ls_Q = str_Q.split(',');
+				QStringList ls_I = str_I.split(',');
+				QStringList ls_Q = str_Q.split(',');
 
-            if(ls_I.count() == ls_Q.count())
-            {
-                y_noisy.resize(ls_I.count());
-                for (int var =0; var < ls_I.count(); ++var) {
-                    y_noisy.at(var) = cx_double(ls_I.at(var).toDouble(),ls_Q.at(var).toDouble());
-                }
-				y_noisy2.push_back(y_noisy); 
+				if(ls_I.count() == ls_Q.count())
+				{
+					y_noisy.resize(ls_I.count());
+					for (int var =0; var < ls_I.count(); ++var) {
+						y_noisy.at(var) = cx_double(ls_I.at(var).toDouble(),ls_Q.at(var).toDouble());
+					}
 
-            }		// if(ls_I.count() == ls_Q.count())
+					// append y_noisy in y_noisy2
+					if(y_noisy2.n_elem == 0) {
+						y_noisy2 = y_noisy;
+					}
+					else {
+						y_noisy2 = arma::join_rows(y_noisy2, y_noisy);
+					}
 
-			// modifying =======================================
+				}		// if(ls_I.count() == ls_Q.count())
 			}		// while
-			// =================================================
         }			// if(File_I ->isOpen() && File_Q->isOpen()) {
     }				// if(File_I != nullptr) {
 
@@ -115,10 +117,16 @@ void MainWindow::on_pushButton_clicked()
 	// Get the ending timepoint
     auto stop1 = std::chrono::high_resolution_clock::now();
 
+
+	y_noisy2 = y_noisy2.submat(0, 0, y_noisy2.n_rows-1, 0);  
+
+
 	// calculate time processing
 	auto duration1 = std::chrono::duration_cast<std::chrono::microseconds>(stop1 - start1);
 	std::cout << "Reading duration time: " << duration1.count() << " microseconds" << std::endl;
-	std::cout << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%" << std::endl; 
+	std::cout << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%" << std::endl;
+	std::cout << "YYYYYYYYnoisy size: " << y_noisy2.n_rows << " " << y_noisy2.n_cols << std::endl; 
+
 
 
 
@@ -140,12 +148,21 @@ void MainWindow::on_pushButton_clicked()
 	double* output_real;
 	double* output_imag;
 
+	double* test; 
 
+	// define our variables 
+	int data_num = y_noisy2.n_cols; 
+	int y_n_size; 
+	int X_size; 
+	int R_row; 
+	int Ss_size;
+	int s_size;
+	int print_flag = 1;						// print report from GPU function
 
 	// prepare our GPU format data
 	// convert cx_mat of armadillo library to ordinary arrays. 
 	fun1(s, 
-		 y_noisy2[0], 
+		 y_noisy2, 
 		 13, 
 		 alpha, 
 		 1e-5, 
@@ -161,7 +178,15 @@ void MainWindow::on_pushButton_clicked()
 		 &s_imag,
 		 &alpha_real,
 		 &output_real,
-		 &output_imag
+		 &output_imag, 
+		 &test, 
+
+		 data_num,
+		 y_n_size,
+		 X_size, 
+		 R_row, 
+		 Ss_size, 
+		 s_size
 		 );
 
 
@@ -178,10 +203,20 @@ void MainWindow::on_pushButton_clicked()
 			  s_imag, 
 			  alpha_real,
 			  output_real,
-			  output_imag
+			  output_imag, 
+			  test, 
+
+			  data_num, 
+			  y_n_size, 
+			  X_size, 
+			  R_row, 
+			  Ss_size, 
+			  s_size
 			  );
 
 	// free the memory that we use
+	free(y_n_real);
+	free(y_n_imag); 
 	free(X_real); 
 	free(X_imag);
 	free(R_real); 
@@ -191,7 +226,8 @@ void MainWindow::on_pushButton_clicked()
 	free(s_real); 
 	free(s_imag); 
 	free(alpha_real); 
-
+	free(output_real); 
+	free(output_imag); 
 
 	// modifying =================================
 	/*cx_mat help = zeros<cx_mat>(3, 3);
@@ -246,7 +282,7 @@ void MainWindow::readLine()
 	std::cout << "indx: " << my_indx << std::endl;
 	std::cout << "y_noisy size: " << y_noisy2.size() << std::endl; 
 	// exclude our target y_noisy
-	y_noisy = y_noisy2[my_indx]; 
+	y_noisy = y_noisy2.col(my_indx); 
 
 
    

@@ -33,7 +33,7 @@ private:
     cx_mat y_noisy,s;
 
 	// modifying ======================
-	std::vector<arma::cx_mat> y_noisy2;
+	cx_mat y_noisy2; 
 	int my_indx;
 	mat alpha; 
 	// ================================

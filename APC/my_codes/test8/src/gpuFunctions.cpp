@@ -17,17 +17,25 @@ void fun1(cx_mat s,
 		  double** s_imag,
 		  double** alpha_real,
 		  double** output_real,
-		  double** output_imag
+		  double** output_imag,
+		  double** test, 
+
+		  int data_num, 
+		  int &y_n_size, 
+		  int &X_size, 
+		  int &R_row, 
+		  int &Ss_size, 
+		  int &s_size
 		  ) {
 
+	// store each data in rows
+	y_noisy = y_noisy.t();
+
 	// zero padding of y_noisy
-	// input y_noisy is 250 * 1 
-    double M = alpha.size();
-    y_noisy = join_cols(zeros<cx_mat>(M*(N-1),1), y_noisy);
-    y_noisy = join_cols(y_noisy, zeros<cx_mat>(M*(N-1),1));
-	// output of y_noisy is 298 * 1
-
-
+    double M = alpha.size();													// input y_noisy data size is 250 * 1
+    y_noisy = join_rows(zeros<cx_mat>(y_noisy.n_rows, M*(N-1)), y_noisy);
+    y_noisy = join_rows(y_noisy, zeros<cx_mat>(y_noisy.n_rows, M*(N-1)));		// output y_noisy data size is 1 * 274
+	
     cx_mat S = zeros<cx_mat>(N,2*N-1);
 
     cx_mat temp = s;
@@ -42,12 +50,10 @@ void fun1(cx_mat s,
         S.col(var) = temp;
     }
 
-	// modifying ====================================================
 	std::vector<arma::cx_mat> Ss(25);
 	for(int k = 0; k < 2*N-1; k++) {
         Ss[k] = S.col(k) * S.col(k).t(); 
     }
-	// =============================================================
 
     cx_mat sum_s = zeros<cx_mat>(N,N);
     for (int var = 0; var < 2*N-1; ++var) {
@@ -55,41 +61,45 @@ void fun1(cx_mat s,
     }
 
     cx_mat W_int = inv<cx_mat>(sum_s)*s;
-    cx_mat temp_X = zeros<cx_mat>(y_noisy.size()-(N-1),1);
-
-    for (int var = 0; var < y_noisy.size()-(N-1) - 1; ++var) {
-        temp_X.row(var) = W_int.t() * y_noisy.submat(var,0,var+N-1,0);
+	cx_mat temp_X = y_noisy.submat(0, 0, y_noisy.n_rows-1, N-1) * W_int;
+	
+	for (int var = 1; var < y_noisy.n_cols-(N-1) - 1; ++var) {
+		temp_X = join_rows(temp_X, y_noisy.submat(0, var, y_noisy.n_rows-1, var+N-1) * W_int);
     }
 
     cx_mat R = eye<cx_mat>(N,N) * sigma;
     cx_mat X = temp_X;
 
-
+	// define our variabels
+	y_n_size = y_noisy.n_cols;							// 274, 250 
+	X_size = X.n_cols;									// 262, 286	
+	R_row = R.n_rows;									// suppose R is a 13 * 13 square mat
+	Ss_size = Ss.size();								// 25, 25
+	s_size = s.size();									// 13, 13
 
 	// allocate memory in CPU for calculation
-	*y_n_real = (double*)malloc(y_noisy.n_rows * y_noisy.n_cols * sizeof(double));
-	*y_n_imag = (double*)malloc(y_noisy.n_rows * y_noisy.n_cols * sizeof(double));
-	*X_real  = (double*)malloc(X.n_rows * X.n_cols * sizeof(double));
-	*X_imag  = (double*)malloc(X.n_rows * X.n_cols * sizeof(double));
-	*R_real  = (double*)malloc(R.n_rows * R.n_cols * sizeof(double)); 
-	*R_imag  = (double*)malloc(R.n_rows * R.n_cols * sizeof(double)); 
-	*Ss_real = (double*)malloc(Ss.size() * s.size() * s.size() * sizeof(double)); 
-	*Ss_imag = (double*)malloc(Ss.size() * s.size() * s.size() * sizeof(double));
-	*s_real  = (double*)malloc(s.n_rows * s.n_cols * sizeof(double)); 
-	*s_imag  = (double*)malloc(s.n_rows * s.n_cols * sizeof(double));
+	*y_n_real = (double*)malloc(data_num * y_n_size * sizeof(double));
+	*y_n_imag = (double*)malloc(data_num * y_n_size * sizeof(double));
+	*X_real  = (double*)malloc(data_num * X_size * sizeof(double));
+	*X_imag  = (double*)malloc(data_num * X_size * sizeof(double));
+	*R_real  = (double*)malloc(R_row * R_row * sizeof(double)); 
+	*R_imag  = (double*)malloc(R_row * R_row * sizeof(double)); 
+	*Ss_real = (double*)malloc(Ss_size * s_size * s_size * sizeof(double)); 
+	*Ss_imag = (double*)malloc(Ss_size * s_size * s_size * sizeof(double));
+	*s_real  = (double*)malloc(s_size * sizeof(double)); 
+	*s_imag  = (double*)malloc(s_size * sizeof(double));
 	*alpha_real = (double*)malloc(alpha.size() * sizeof(double)); 
-	*output_real  = (double*)malloc(13 * sizeof(double)); // hard_code: 262, change it in future
-	*output_imag  = (double*)malloc(13 * sizeof(double)); // hard_code: 262, ch..
-
+	*output_real  = (double*)malloc(data_num * X_size * sizeof(double)); 
+	*output_imag  = (double*)malloc(data_num * X_size * sizeof(double)); 
+	*test = (double*)malloc(data_num * X_size * 13 * 13 * sizeof(double)); 
 
 	// check size of the variables
-	std::cout << "X size: " << X.n_rows * X.n_cols << std::endl; 
-	std::cout << "X rows: " << X.n_rows << std::endl; 
-	std::cout << "X cols: " << X.n_cols << std::endl; 
-	std::cout << "R size: " << R.n_rows * R.n_cols << std::endl; 
-	std::cout << "Ss size: " << Ss.size() * s.size() * s.size() << std::endl; 
-	std::cout << "s size: " << s.n_rows * s.n_cols << std::endl; 
-
+	std::cout << "data_num: " << data_num << std::endl; 
+	std::cout << "y_n_size: " << y_n_size << std::endl; 
+	std::cout << "X_size: " << X_size << std::endl; 
+	std::cout << "R_row: " << R_row << std::endl; 
+	std::cout << "Ss_size: " << Ss_size << std::endl; 
+	std::cout << "s_size: " << s_size << std::endl; 
 
 	// transfering data from armadillo to ordinary arrays to use in GPU kernels	
 	for(int i=0; i<y_noisy.n_rows; ++i){

@@ -24,7 +24,15 @@ void fun1(cx_mat s,
 		double** s_imag,
 		double** alpha_real,
 		double** output_real,
-		double** output_imag
+		double** output_imag,
+		double** test, 
+
+		int data_num, 
+		int &y_n_size, 
+		int &X_size, 
+		int &R_row, 
+		int &Ss_size, 
+		int &s_size
 		); 
 
 
