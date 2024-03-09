@@ -114,10 +114,8 @@ void MainWindow::on_pushButton_clicked()
     }				// if(File_I != nullptr) {
 
 
-
 	// Get the ending timepoint
     auto stop1 = std::chrono::high_resolution_clock::now();
-
 
 
 	y_noisy2 = y_noisy2.submat(0, 0, y_noisy2.n_rows-1, 0);  

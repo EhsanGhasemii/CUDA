@@ -91,7 +91,7 @@ void fun1(cx_mat s,
 	*alpha_real = (double*)malloc(alpha.size() * sizeof(double)); 
 	*output_real  = (double*)malloc(data_num * X_size * sizeof(double)); 
 	*output_imag  = (double*)malloc(data_num * X_size * sizeof(double)); 
-	*test = (double*)malloc(data_num * X_size * 13 * 13 * sizeof(double)); 
+	*test = (double*)malloc(data_num * X_size * R_row * R_row * sizeof(double)); 
 
 	// check size of the variables
 	std::cout << "data_num: " << data_num << std::endl; 
