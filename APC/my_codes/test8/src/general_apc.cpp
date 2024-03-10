@@ -350,7 +350,7 @@ cx_mat General_APC::algorithm2(cx_mat s, cx_mat  y_noisy, double N, mat alpha, d
 			// modifying ================================= 
 			/*if (i == sample_test) {
 				//cx_mat CR = y_noisy.submat(i+(N-1)*(j), 0, (j)*(N-1)+i+N-1, 0);
-				cx_mat CR = W; 
+				cx_mat CR = inv(C+R); 
 				std::cout << " ------ " << std::endl; 
 				std::cout << "C+R: " << std::endl; 
 				for(int i=0; i<CR.n_rows; i++){
@@ -369,9 +369,9 @@ cx_mat General_APC::algorithm2(cx_mat s, cx_mat  y_noisy, double N, mat alpha, d
             cx_mat t = W.t() * y_noisy.submat(i+(N-1)*(j),0,(j)*(N-1)+i+N-1,0);
 
 			// modifying =================================
-			/*if (i < X.size()) {
+			if (i < X.size()) {
 				std::cout << "i: " << i-12 << " - Finall Result: " << t << std::endl;
-			}*/
+			}
 			// ===========================================
 
 			// time4 

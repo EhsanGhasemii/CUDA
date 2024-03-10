@@ -8,8 +8,6 @@
 
 
 
-
-
 // define our functions ======================================
 void fill(float* data, int size);
 dim3 getDimGrid(const int n); 
@@ -56,7 +54,13 @@ __global__ void complexMatrixInversion(double* input_reald,		// input data is "i
 									   double* W_reald_shr2, 
 									   double* W_imagd_shr2, 
 									   double* W_reald_shr, 
-									   double* W_imagd_shr
+									   double* W_imagd_shr, 
+
+									   double* out_reald, 
+									   double* out_imagd, 
+									   double* out_reald_shr,
+									   double* out_imagd_shr
+
 									   );			     		// we suppose input data is squre matrix
 
 
@@ -139,6 +143,14 @@ void gpuKernel(double* y_n_real,
 	double* W_imagd_shr; 
 	double* testd; 
 
+	double* out_reald; 
+	double* out_imagd; 
+	double* out_reald_shr; 
+	double* out_imagd_shr; 
+
+
+
+
 
 	// allocation memory in GPU
 	HANDLE_ERROR(cudaMalloc((void**)&y_n_reald, data_num * y_n_size * sizeof(double)));
@@ -164,7 +176,11 @@ void gpuKernel(double* y_n_real,
 	HANDLE_ERROR(cudaMalloc((void**)&W_reald_shr, data_num * X_size * R_row * sizeof(double)));
 	HANDLE_ERROR(cudaMalloc((void**)&W_imagd_shr, data_num * X_size * R_row * sizeof(double)));
 	HANDLE_ERROR(cudaMalloc((void**)&testd, data_num * X_size * R_row * R_row * sizeof(double))); 
-
+	HANDLE_ERROR(cudaMalloc((void**)&out_reald, data_num * X_size * R_row * R_row * sizeof(double))); 
+	HANDLE_ERROR(cudaMalloc((void**)&out_imagd, data_num * X_size * R_row * R_row * sizeof(double))); 
+	HANDLE_ERROR(cudaMalloc((void**)&out_reald_shr, data_num * X_size * R_row * R_row * sizeof(double))); 
+	HANDLE_ERROR(cudaMalloc((void**)&out_imagd_shr, data_num * X_size * R_row * R_row * sizeof(double))); 
+	
 	// copy array from CPU to GPU
 	HANDLE_ERROR(cudaMemcpy(y_n_reald, y_n_real, data_num * y_n_size * sizeof(double), cudaMemcpyHostToDevice));
 	HANDLE_ERROR(cudaMemcpy(y_n_imagd, y_n_imag, data_num * y_n_size * sizeof(double), cudaMemcpyHostToDevice));
@@ -229,7 +245,13 @@ void gpuKernel(double* y_n_real,
 													W_reald_shr2, 
 													W_imagd_shr2, 
 													W_reald_shr, 
-													W_imagd_shr
+													W_imagd_shr, 
+
+													out_reald, 
+													out_imagd, 
+													out_reald_shr, 
+													out_imagd_shr
+
 													);
 													
 
@@ -254,8 +276,8 @@ void gpuKernel(double* y_n_real,
 		strcpy(name, "output_imag");
 		print_matrix(name, output_imag, X_size, 0 * X_size); 
 
-		strcpy(name, "test");
-		print_matrix(name, test, 13, 1 * 13 * 13); 
+		//strcpy(name, "test");
+		//print_matrix(name, test, 13, 1 * 13 * 13); 
 
 		/*strcpy(name, "inv_real");
 		print_matrix(name, inv_real, mat_size * mat_size, 0); 
@@ -433,7 +455,7 @@ __global__ void kernelFunc(double* X_reald,
 	__syncthreads(); 
 
 
-	if ((blockIdx.x <= 261 - 24) || (blockIdx.x <= 261 + 261 - 24 && blockIdx.x >=261)) {     // blockIdx.x <= X_size - 2 * N + 2
+	if ((blockIdx.x >= 0 && blockIdx.x <= 261 - 24)) {     // blockIdx.x <= X_size - 2 * N + 2
 		// first part of the algorithm: 25 * (matrix multilplication and addition)
 		for (int count1 = 0; count1 < 25; ++count1) {
 			for (int count2 = 0; count2 < 13; ++count2) {
@@ -480,14 +502,18 @@ __global__ void complexMatrixInversion(double* input_reald,		// input data is "i
 									   double* W_reald_shr2, 
 									   double* W_imagd_shr2, 
 									   double* W_reald_shr, 
-									   double* W_imagd_shr
+									   double* W_imagd_shr, 
 
+									   double* out_reald, 
+									   double* out_imagd, 
+									   double* out_reald_shr, 
+									   double* out_imagd_shr
 
 									   ) {			     		// we suppose input data is squre matrix
 
 
 	// define our variables
-	__shared__ double out_real[30 * 30];
+/*	__shared__ double out_real[30 * 30];
 	__shared__ double out_imag[30 * 30];
 
 	__shared__ double out_real_shr[30 * 30]; 
@@ -495,7 +521,7 @@ __global__ void complexMatrixInversion(double* input_reald,		// input data is "i
 
 	__shared__ double in_real[30 * 30]; 
 	__shared__ double in_imag[30 * 30]; 
-	
+*/	
 
 	// define index of each thread
 	long long i;
@@ -514,21 +540,23 @@ __global__ void complexMatrixInversion(double* input_reald,		// input data is "i
 
 
 
+//	if (blockIdx.x <= 261 + 261 - 24 && blockIdx.x >= 261) {
+
 	if (threadIdx.x < 169) {          // i < 169 
 
 		// transfer input data to shared memory
-		in_real[mat_ind] = input_reald[i]; 
-		in_imag[mat_ind] = input_imagd[i]; 
+		//in_real[mat_ind] = input_reald[i]; 
+		//in_imag[mat_ind] = input_imagd[i]; 
 
 
 		// creating eye matrix for gauss jordan elimination
 		if (mat_row == mat_col) {	
-			out_real[mat_ind] = 1.0; 
-			out_imag[mat_ind] = 0.0; 
+			out_reald[blockIdx.x * 169 + mat_ind] = 1.0; 
+			out_imagd[blockIdx.x * 169 + mat_ind] = 0.0; 
 		}
 		else {
-			out_real[mat_ind] = 0.0; 
-			out_imag[mat_ind] = 0.0; 
+			out_reald[blockIdx.x * 169 + mat_ind] = 0.0; 
+			out_imagd[blockIdx.x * 169 + mat_ind] = 0.0; 
 		}
 
 
@@ -550,32 +578,32 @@ __global__ void complexMatrixInversion(double* input_reald,		// input data is "i
 					input_reald[blockIdx.x * 169 + mat_ind] += input_reald[blockIdx.x * 169 + count2 * m + mat_col]; // ch ..
 					input_imagd[blockIdx.x * 169 + mat_ind] += input_imagd[blockIdx.x * 169 + count2 * m + mat_col]; // ch ..
 
-					out_real[mat_ind] += out_real[count2 * m + mat_col]; 
-					out_imag[mat_ind] += out_imag[count2 * m + mat_col]; 
+					out_reald[blockIdx.x * 169 + mat_ind] += out_reald[blockIdx.x * 169 + count2 * m + mat_col]; 
+					out_imagd[blockIdx.x * 169 + mat_ind] += out_imagd[blockIdx.x * 169 + count2 * m + mat_col]; 
 				}
 				__syncthreads(); 	
 			}
 
 			if (mat_row > count1) {
-				double mul_real = in_real[mat_row * m + count1] * in_real[count1 * m + count1]
-								+ in_imag[mat_row * m + count1] * in_imag[count1 * m + count1];
-				mul_real /= (in_real[count1 * m + count1] * in_real[count1 * m + count1]
-						   + in_imag[count1 * m + count1] * in_imag[count1 * m + count1]); 
+				double mul_real = input_reald[blockIdx.x * 169 + mat_row * m + count1] * input_reald[blockIdx.x * 169 + count1 * m + count1]
+								+ input_imagd[blockIdx.x * 169 + mat_row * m + count1] * input_imagd[blockIdx.x * 169 + count1 * m + count1];
+				mul_real /= (input_reald[blockIdx.x * 169 + count1 * m + count1] * input_reald[blockIdx.x * 169 + count1 * m + count1]
+						   + input_imagd[blockIdx.x * 169 + count1 * m + count1] * input_imagd[blockIdx.x * 169 + count1 * m + count1]); 
 
-				double mul_imag = in_imag[mat_row * m + count1] * in_real[count1 * m + count1]
-								- in_real[mat_row * m + count1] * in_imag[count1 * m + count1];
-				mul_imag /= (in_real[count1 * m + count1] * in_real[count1 * m + count1]
-						   + in_imag[count1 * m + count1] * in_imag[count1 * m + count1]); 
+				double mul_imag = input_imagd[blockIdx.x * 169 + mat_row * m + count1] * input_reald[blockIdx.x * 169 + count1 * m + count1]
+								- input_reald[blockIdx.x * 169 + mat_row * m + count1] * input_imagd[blockIdx.x * 169 + count1 * m + count1];
+				mul_imag /= (input_reald[blockIdx.x * 169 + count1 * m + count1] * input_reald[blockIdx.x * 169 + count1 * m + count1]
+						   + input_imagd[blockIdx.x * 169 + count1 * m + count1] * input_imagd[blockIdx.x * 169 + count1 * m + count1]); 
 
-				in_real[mat_ind] -= (mul_real * in_real[count1 * m + mat_col]
-								   - mul_imag * in_imag[count1 * m + mat_col]); 
-				in_imag[mat_ind] -= (mul_real * in_imag[count1 * m + mat_col]
-								   + mul_imag * in_real[count1 * m + mat_col]);
+				input_reald[blockIdx.x * 169 + mat_ind] -= (mul_real * input_reald[blockIdx.x * 169 + count1 * m + mat_col]
+								   - mul_imag * input_imagd[blockIdx.x * 169 + count1 * m + mat_col]); 
+				input_imagd[blockIdx.x * 169 + mat_ind] -= (mul_real * input_imagd[blockIdx.x * 169 + count1 * m + mat_col]
+								   + mul_imag * input_reald[blockIdx.x * 169 + count1 * m + mat_col]);
 
-				out_real[mat_ind] -= (mul_real * out_real[count1 * m + mat_col]
-									- mul_imag * out_imag[count1 * m + mat_col]);
-				out_imag[mat_ind] -= (mul_real * out_imag[count1 * m + mat_col]
-									+ mul_imag * out_real[count1 * m + mat_col]);
+				out_reald[blockIdx.x * 169 + mat_ind] -= (mul_real * out_reald[blockIdx.x * 169 + count1 * m + mat_col]
+									- mul_imag * out_imagd[blockIdx.x * 169 + count1 * m + mat_col]);
+				out_imagd[blockIdx.x * 169 + mat_ind] -= (mul_real * out_imagd[blockIdx.x * 169 + count1 * m + mat_col]
+									+ mul_imag * out_reald[blockIdx.x * 169 + count1 * m + mat_col]);
 			}
 
 			// wait till all the data is changed
@@ -586,25 +614,25 @@ __global__ void complexMatrixInversion(double* input_reald,		// input data is "i
 		// algorithm: part2 - make the input data lower-triangular
 		for (int count1 = m - 1; count1 > 0; --count1) {
 			if (mat_row < count1) {
-				double mul_real = in_real[mat_row * m + count1] * in_real[count1 * m + count1]
-								+ in_imag[mat_row * m + count1] * in_imag[count1 * m + count1];
-				mul_real /= (in_real[count1 * m + count1] * in_real[count1 * m + count1]
-						   + in_imag[count1 * m + count1] * in_imag[count1 * m + count1]); 
+				double mul_real = input_reald[blockIdx.x * 169 + mat_row * m + count1] * input_reald[blockIdx.x * 169 + count1 * m + count1]
+								+ input_imagd[blockIdx.x * 169 + mat_row * m + count1] * input_imagd[blockIdx.x * 169 + count1 * m + count1];
+				mul_real /= (input_reald[blockIdx.x * 169 + count1 * m + count1] * input_reald[blockIdx.x * 169 + count1 * m + count1]
+						   + input_imagd[blockIdx.x * 169 + count1 * m + count1] * input_imagd[blockIdx.x * 169 + count1 * m + count1]); 
 
-				double mul_imag = in_imag[mat_row * m + count1] * in_real[count1 * m + count1]
-								- in_real[mat_row * m + count1] * in_imag[count1 * m + count1];
-				mul_imag /= (in_real[count1 * m + count1] * in_real[count1 * m + count1]
-						   + in_imag[count1 * m + count1] * in_imag[count1 * m + count1]); 
+				double mul_imag = input_imagd[blockIdx.x * 169 + mat_row * m + count1] * input_reald[blockIdx.x * 169 + count1 * m + count1]
+								- input_reald[blockIdx.x * 169 + mat_row * m + count1] * input_imagd[blockIdx.x * 169 + count1 * m + count1];
+				mul_imag /= (input_reald[blockIdx.x * 169 + count1 * m + count1] * input_reald[blockIdx.x * 169 + count1 * m + count1]
+						   + input_imagd[blockIdx.x * 169 + count1 * m + count1] * input_imagd[blockIdx.x * 169 + count1 * m + count1]); 
 
-				in_real[mat_ind] -= (mul_real * in_real[count1 * m + mat_col]
-								   - mul_imag * in_imag[count1 * m + mat_col]); 
-				in_imag[mat_ind] -= (mul_real * in_imag[count1 * m + mat_col]
-								   + mul_imag * in_real[count1 * m + mat_col]);
+				input_reald[blockIdx.x * 169 + mat_ind] -= (mul_real * input_reald[blockIdx.x * 169 + count1 * m + mat_col]
+								   - mul_imag * input_imagd[blockIdx.x * 169 + count1 * m + mat_col]); 
+				input_imagd[blockIdx.x * 169 + mat_ind] -= (mul_real * input_imagd[blockIdx.x * 169 + count1 * m + mat_col]
+								   + mul_imag * input_reald[blockIdx.x * 169 + count1 * m + mat_col]);
 
-				out_real[mat_ind] -= (mul_real * out_real[count1 * m + mat_col]
-									- mul_imag * out_imag[count1 * m + mat_col]);
-				out_imag[mat_ind] -= (mul_real * out_imag[count1 * m + mat_col]
-									+ mul_imag * out_real[count1 * m + mat_col]);
+				out_reald[blockIdx.x * 169 + mat_ind] -= (mul_real * out_reald[blockIdx.x * 169 + count1 * m + mat_col]
+									- mul_imag * out_imagd[blockIdx.x * 169 + count1 * m + mat_col]);
+				out_imagd[blockIdx.x * 169 + mat_ind] -= (mul_real * out_imagd[blockIdx.x * 169 + count1 * m + mat_col]
+									+ mul_imag * out_reald[blockIdx.x * 169 + count1 * m + mat_col]);
 			}
 
 			// wait till all the data is changed
@@ -612,15 +640,15 @@ __global__ void complexMatrixInversion(double* input_reald,		// input data is "i
 		}
 
 		// algorithm: part3 - normalize input data to create matrix inversion
-		out_real_shr[mat_ind] = (out_real[mat_ind] * in_real[mat_row * m + mat_row]
-							   + out_imag[mat_ind] * in_imag[mat_row * m + mat_row])
-							   / (in_real[mat_row * m + mat_row] * in_real[mat_row * m + mat_row]
-								+ in_imag[mat_row * m + mat_row] * in_imag[mat_row * m + mat_row]);
+		out_reald_shr[blockIdx.x * 169 + mat_ind] = (out_reald[blockIdx.x * 169 + mat_ind] * input_reald[blockIdx.x * 169 + mat_row * m + mat_row]
+							   + out_imagd[blockIdx.x * 169 + mat_ind] * input_imagd[blockIdx.x * 169 + mat_row * m + mat_row])
+							   / (input_reald[blockIdx.x * 169 + mat_row * m + mat_row] * input_reald[blockIdx.x * 169 + mat_row * m + mat_row]
+								+ input_imagd[blockIdx.x * 169 + mat_row * m + mat_row] * input_imagd[blockIdx.x * 169 + mat_row * m + mat_row]);
 		
-		out_imag_shr[mat_ind] = (out_imag[mat_ind] * in_real[mat_row * m + mat_row]
-							   - out_real[mat_ind] * in_imag[mat_row * m + mat_row])
-								/ (in_real[mat_row * m + mat_row] * in_real[mat_row * m + mat_row]
-								 + in_imag[mat_row * m + mat_row] * in_imag[mat_row * m + mat_row]);
+		out_imagd_shr[blockIdx.x * 169 + mat_ind] = (out_imagd[blockIdx.x * 169 + mat_ind] * input_reald[blockIdx.x * 169 + mat_row * m + mat_row]
+							   - out_reald[blockIdx.x * 169 + mat_ind] * input_imagd[blockIdx.x * 169 + mat_row * m + mat_row])
+								/ (input_reald[blockIdx.x * 169 + mat_row * m + mat_row] * input_reald[blockIdx.x * 169 + mat_row * m + mat_row]
+								 + input_imagd[blockIdx.x * 169 + mat_row * m + mat_row] * input_imagd[blockIdx.x * 169 + mat_row * m + mat_row]);
 
 	} // if (i < 169)
 
@@ -656,11 +684,11 @@ __global__ void complexMatrixInversion(double* input_reald,		// input data is "i
 	// APC algorithm pqrt4: inv(C+R) * s 
 	if (threadIdx.x < 13) {            // hard_code: 13 - ch..
 		for (int count1 = 0; count1 < 13; ++count1) {     // count1 < 13
-			W_reald_shr[blockIdx.x * 13 + threadIdx.x] += out_real_shr[threadIdx.x * 13 + count1] * s_reald[count1]; 
-			W_reald_shr[blockIdx.x * 13 + threadIdx.x] -= out_imag_shr[threadIdx.x * 13 + count1] * s_imagd[count1]; 
+			W_reald_shr[blockIdx.x * 13 + threadIdx.x] += out_reald_shr[blockIdx.x * 169 + threadIdx.x * 13 + count1] * s_reald[count1]; 
+			W_reald_shr[blockIdx.x * 13 + threadIdx.x] -= out_imagd_shr[blockIdx.x * 169 + threadIdx.x * 13 + count1] * s_imagd[count1]; 
 
-			W_imagd_shr[blockIdx.x * 13 + threadIdx.x] += out_real_shr[threadIdx.x * 13 + count1] * s_imagd[count1]; 
-			W_imagd_shr[blockIdx.x * 13 + threadIdx.x] += out_imag_shr[threadIdx.x * 13 + count1] * s_reald[count1]; 
+			W_imagd_shr[blockIdx.x * 13 + threadIdx.x] += out_reald_shr[blockIdx.x * 169 + threadIdx.x * 13 + count1] * s_imagd[count1]; 
+			W_imagd_shr[blockIdx.x * 13 + threadIdx.x] += out_imagd_shr[blockIdx.x * 169 + threadIdx.x * 13 + count1] * s_reald[count1]; 
 		}
 
 	}
@@ -677,10 +705,12 @@ __global__ void complexMatrixInversion(double* input_reald,		// input data is "i
 
 	__syncthreads(); 
 
+
+
 	// modifying ====================================
-	/*if (threadIdx.x < 13 && blockIdx.x == 1) {
-		W_reald[threadIdx.x] = input_reald[i]; 
-		W_imagd[threadIdx.x] = in_real[mat_ind]; 
+	/*if (threadIdx.x < 13 && blockIdx.x == 261 + 1) {
+		W_reald[261 + threadIdx.x] = out_reald_shr[blockIdx.x * 169 + threadIdx.x]; 
+		W_imagd[261 + threadIdx.x] = out_imagd_shr[blockIdx.x * 169 + threadIdx.x]; 
 	}*/
 	// ==============================================
 
@@ -698,6 +728,8 @@ __global__ void complexMatrixInversion(double* input_reald,		// input data is "i
 							     + W_imagd_shr2[blockIdx.x * 13 + count1] * y_n_reald[blockIdx.x + 12 + count1]; 
 		}
 	}
+
+//	} // block check 
 
 }
 
@@ -805,7 +837,105 @@ __global__ void matrixInversion(double* inputd,		// input data is "inputd"
 void print_matrix(char* name, double* data, int size, int d_shift) {
 	printf("arr : %s\n", name);
 	for (int i=0+d_shift; i<size+d_shift; ++i) {
-		printf("%d : %f\n", i, data[i]); 
+		printf("%d %d : %f\n", i, i-d_shift, data[i]); 
 	}
 	printf("--------------------\n"); 
 }
+
+
+
+
+
+
+
+
+		// Matrix inversion algorithm main body ======================================== 
+		// we use Gauss Jordan Algorithm
+		// algorithm: part1 - make the input data upper-triangular
+/*		for (int count1 = 0; count1 < m - 1; ++count1) {
+			
+			// change current row when its pivot is zero
+			if ((input_reald[blockIdx.x * 169 + count1 * m + count1] == 0) && (input_imagd[blockIdx.x * 169 + count1 * m + count1] == 0)) {
+				int count2 = count1 + 1; 
+				while ((input_reald[blockIdx.x * 169 + count2 * m + count1] == 0) && (input_imagd[blockIdx.x * 169 + count2 * m + count1] == 0) && (count2 < m)) {
+					++count2;
+				}
+				if(mat_row == count1) {
+					input_reald[blockIdx.x * 169 + mat_ind] += input_reald[blockIdx.x * 169 + count2 * m + mat_col]; // ch ..
+					input_imagd[blockIdx.x * 169 + mat_ind] += input_imagd[blockIdx.x * 169 + count2 * m + mat_col]; // ch ..
+
+					out_real[mat_ind] += out_real[count2 * m + mat_col]; 
+					out_imag[mat_ind] += out_imag[count2 * m + mat_col]; 
+				}
+				__syncthreads(); 	
+			}
+
+			if (mat_row > count1) {
+				double mul_real = in_real[mat_row * m + count1] * in_real[count1 * m + count1]
+								+ in_imag[mat_row * m + count1] * in_imag[count1 * m + count1];
+				mul_real /= (in_real[count1 * m + count1] * in_real[count1 * m + count1]
+						   + in_imag[count1 * m + count1] * in_imag[count1 * m + count1]); 
+
+				double mul_imag = in_imag[mat_row * m + count1] * in_real[count1 * m + count1]
+								- in_real[mat_row * m + count1] * in_imag[count1 * m + count1];
+				mul_imag /= (in_real[count1 * m + count1] * in_real[count1 * m + count1]
+						   + in_imag[count1 * m + count1] * in_imag[count1 * m + count1]); 
+
+				in_real[mat_ind] -= (mul_real * in_real[count1 * m + mat_col]
+								   - mul_imag * in_imag[count1 * m + mat_col]); 
+				in_imag[mat_ind] -= (mul_real * in_imag[count1 * m + mat_col]
+								   + mul_imag * in_real[count1 * m + mat_col]);
+
+				out_real[mat_ind] -= (mul_real * out_real[count1 * m + mat_col]
+									- mul_imag * out_imag[count1 * m + mat_col]);
+				out_imag[mat_ind] -= (mul_real * out_imag[count1 * m + mat_col]
+									+ mul_imag * out_real[count1 * m + mat_col]);
+			}
+
+			// wait till all the data is changed
+			__syncthreads(); 
+		}
+
+
+		// algorithm: part2 - make the input data lower-triangular
+		for (int count1 = m - 1; count1 > 0; --count1) {
+			if (mat_row < count1) {
+				double mul_real = in_real[mat_row * m + count1] * in_real[count1 * m + count1]
+								+ in_imag[mat_row * m + count1] * in_imag[count1 * m + count1];
+				mul_real /= (in_real[count1 * m + count1] * in_real[count1 * m + count1]
+						   + in_imag[count1 * m + count1] * in_imag[count1 * m + count1]); 
+
+				double mul_imag = in_imag[mat_row * m + count1] * in_real[count1 * m + count1]
+								- in_real[mat_row * m + count1] * in_imag[count1 * m + count1];
+				mul_imag /= (in_real[count1 * m + count1] * in_real[count1 * m + count1]
+						   + in_imag[count1 * m + count1] * in_imag[count1 * m + count1]); 
+
+				in_real[mat_ind] -= (mul_real * in_real[count1 * m + mat_col]
+								   - mul_imag * in_imag[count1 * m + mat_col]); 
+				in_imag[mat_ind] -= (mul_real * in_imag[count1 * m + mat_col]
+								   + mul_imag * in_real[count1 * m + mat_col]);
+
+				out_real[mat_ind] -= (mul_real * out_real[count1 * m + mat_col]
+									- mul_imag * out_imag[count1 * m + mat_col]);
+				out_imag[mat_ind] -= (mul_real * out_imag[count1 * m + mat_col]
+									+ mul_imag * out_real[count1 * m + mat_col]);
+			}
+
+			// wait till all the data is changed
+			__syncthreads(); 
+		}
+
+		// algorithm: part3 - normalize input data to create matrix inversion
+		out_real_shr[mat_ind] = (out_real[mat_ind] * in_real[mat_row * m + mat_row]
+							   + out_imag[mat_ind] * in_imag[mat_row * m + mat_row])
+							   / (in_real[mat_row * m + mat_row] * in_real[mat_row * m + mat_row]
+								+ in_imag[mat_row * m + mat_row] * in_imag[mat_row * m + mat_row]);
+		
+		out_imag_shr[mat_ind] = (out_imag[mat_ind] * in_real[mat_row * m + mat_row]
+							   - out_real[mat_ind] * in_imag[mat_row * m + mat_row])
+								/ (in_real[mat_row * m + mat_row] * in_real[mat_row * m + mat_row]
+								 + in_imag[mat_row * m + mat_row] * in_imag[mat_row * m + mat_row]);
+
+	} // if (i < 169)
+
+*/

@@ -120,7 +120,7 @@ void MainWindow::on_pushButton_clicked()
 
 
 
-	y_noisy2 = y_noisy2.submat(0, 0, y_noisy2.n_rows-1, 0);  
+	y_noisy2 = y_noisy2.submat(0, 0, y_noisy2.n_rows-1, 1);  
 
 
 	// calculate time processing
