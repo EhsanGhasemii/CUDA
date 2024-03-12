@@ -59,7 +59,11 @@ __global__ void complexMatrixInversion(double* input_reald,		// input data is "i
 									   double* out_reald, 
 									   double* out_imagd, 
 									   double* out_reald_shr,
-									   double* out_imagd_shr
+									   double* out_imagd_shr, 
+									   double* Ss_reald, 
+									   double* Ss_imagd, 
+									   double* R_reald,
+									   double* R_imagd
 
 									   );			     		// we suppose input data is squre matrix
 
@@ -250,7 +254,11 @@ void gpuKernel(double* y_n_real,
 													out_reald, 
 													out_imagd, 
 													out_reald_shr, 
-													out_imagd_shr
+													out_imagd_shr, 
+													Ss_reald, 
+													Ss_imagd, 
+													R_reald, 
+													R_imagd
 
 													);
 													
@@ -271,10 +279,10 @@ void gpuKernel(double* y_n_real,
 		//print_matrix(name, a		 , n);
 
 		strcpy(name, "output_real"); 
-		print_matrix(name, output_real, X_size, 0 * X_size); 
+		print_matrix(name, output_real, X_size, 4 * X_size); 
 
 		strcpy(name, "output_imag");
-		print_matrix(name, output_imag, X_size, 0 * X_size); 
+		print_matrix(name, output_imag, X_size, 4 * X_size); 
 
 		//strcpy(name, "test");
 		//print_matrix(name, test, 13, 1 * 13 * 13); 
@@ -409,80 +417,19 @@ __global__ void kernelFunc(double* X_reald,
 						   ) {
 	
 
-	// define our variables
-	// !!!!! Please consider that if your input data will be big 
-	// you may need to use long format of variables !!!!!!!!!!!!
-	//__shared__ double rho_reald_shr[262]; // hard_code: 262 - change it in future
-	//__shared__ double rho_imagd_shr[262]; // hard_code: 262 - change it in future
-
-	//__shared__ float Ss_reald_shr[25 * 13 * 13]; 
-	//__shared__ float Ss_imagd_shr[25 * 13 * 13]; 
-
-	//double C_reald[262 * 13 * 13]; 
-	//double C_imagd[262 * 13 * 13]; 
-
-	// define index of each thread
-	long long i;
-	i = (blockIdx.z * gridDim.y * gridDim.x) + (blockIdx.y * gridDim.x) + (blockIdx.x);
-	i *= blockDim.z * blockDim.y * blockDim.x;
-	i += (threadIdx.z * blockDim.y * blockDim.x) + (threadIdx.y * blockDim.x) + (threadIdx.x);
-
-	int block_ind = i % X_size; 
 
 
 	// !!!!!!!!!!!!!!!!!!!!!!!! this will be updated for multiple chunked data !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!1
 	// create rho varible in shared memory
-	if (block_ind <= X_size) {               // hard_code: 262 - change it in future
-		double my_angle = atan2(X_imagd[i], X_reald[i]); 
-		double my_radius = sqrt(X_imagd[i] * X_imagd[i] + X_reald[i] * X_reald[i]); 
+	if (1 <= X_size && threadIdx.x == 0) {               // block_ind <= X_size
+		double my_angle = atan2(X_imagd[blockIdx.x], X_reald[blockIdx.x]); 
+		double my_radius = sqrt(X_imagd[blockIdx.x] * X_imagd[blockIdx.x] + X_reald[blockIdx.x] * X_reald[blockIdx.x]); 
 		my_radius = pow(my_radius, alpha_reald[0]); 
 		my_angle *= alpha_reald[0]; 
 
-		rho_reald[i] = my_radius * cos(my_angle); 
-		rho_imagd[i] = my_radius * sin(my_angle); 
+		rho_reald[blockIdx.x] = my_radius * cos(my_angle); 
+		rho_imagd[blockIdx.x] = my_radius * sin(my_angle); 
 	}
-
-
-	// transfer Ss matrices in shared memory
-	/*if (i < 13 * 13) {
-		for (int count1 = 0; count1 < 25; ++count1) {
-			Ss_reald_shr[count1 * 169 + i] = Ss_reald[count1 * 169 + i]; 
-			Ss_imagd_shr[count1 * 169 + i] = Ss_imagd[count1 * 169 + i]; 
-		}
-	}*/
-	
-	// wait till all t172.17.0.0/16he data is ready
-	__syncthreads(); 
-
-
-	if ((blockIdx.x >= 0 && blockIdx.x <= 261 - 24)) {     // blockIdx.x <= X_size - 2 * N + 2
-		// first part of the algorithm: 25 * (matrix multilplication and addition)
-		for (int count1 = 0; count1 < 25; ++count1) {
-			for (int count2 = 0; count2 < 13; ++count2) {
-				for (int count3 = 0; count3 < 13; ++count3) {         // hard_code: (i-12) in both lines
-					output_reald[blockIdx.x * 169 + count2 * 13 + count3] += (rho_reald[blockIdx.x + count1] * Ss_reald[count1 * 169 + count2 * 13 + count3]
-																		    - rho_imagd[blockIdx.x + count1] * Ss_imagd[count1 * 169 + count2 * 13 + count3]); 
-					output_imagd[blockIdx.x * 169 + count2 * 13 + count3] += (rho_reald[blockIdx.x + count1] * Ss_imagd[count1 * 169 + count2 * 13 + count3]
-																		    + rho_imagd[blockIdx.x + count1] * Ss_reald[count1 * 169 + count2 * 13 + count3]);
-				}
-			}
-		}
-
-		// second part of the algorithm: C += R
-		for (int count2 = 0; count2 < 13; ++count2) {
-			for (int count3 = 0; count3 < 13; ++count3) {
-				output_reald[blockIdx.x * 169 + count2 * 13 + count3] += R_reald[count2 * 13 + count3]; 
-				output_imagd[blockIdx.x * 169 + count2 * 13 + count3] += R_imagd[count2 * 13 + count3];
-			}
-		}
-
-
-		// save rho to use it in next steps
-		//rho_reald[i] = rho_reald_shr[i];
-		//rho_imagd[i] = rho_imagd_shr[i]; 
-
-	}
-
 
 }
 
@@ -507,11 +454,40 @@ __global__ void complexMatrixInversion(double* input_reald,		// input data is "i
 									   double* out_reald, 
 									   double* out_imagd, 
 									   double* out_reald_shr, 
-									   double* out_imagd_shr
+									   double* out_imagd_shr, 
+									   double* Ss_reald, 
+									   double* Ss_imagd, 
+									   double* R_reald, 
+									   double* R_imagd
 
 									   ) {			     		// we suppose input data is squre matrix
 
 
+
+	// =========================================================================
+	int thr_row = threadIdx.x / 13; 
+	int thr_col = threadIdx.x % 13; 
+
+	if ((blockIdx.x % 261 <= 261 - 24)) {     // blockIdx.x <= X_size - 2 * N + 2
+		// first part of the algorithm: 25 * (matrix multilplication and addition)
+		for (int count1 = 0; count1 < 25; ++count1) {
+			input_reald[blockIdx.x * 169 + thr_row * 13 + thr_col] += (rho_reald[blockIdx.x + count1] * Ss_reald[count1 * 169 + thr_row * 13 + thr_col]
+																	  - rho_imagd[blockIdx.x + count1] * Ss_imagd[count1 * 169 + thr_row * 13 + thr_col]); 
+			input_imagd[blockIdx.x * 169 + thr_row * 13 + thr_col] += (rho_reald[blockIdx.x + count1] * Ss_imagd[count1 * 169 + thr_row * 13 + thr_col]
+																	  + rho_imagd[blockIdx.x + count1] * Ss_reald[count1 * 169 + thr_row * 13 + thr_col]);
+		}
+		
+
+		__syncthreads();
+
+
+		// second part of the algorithm: C += R
+		input_reald[blockIdx.x * 169 + thr_row * 13 + thr_col] += R_reald[thr_row * 13 + thr_col]; 
+		input_imagd[blockIdx.x * 169 + thr_row * 13 + thr_col] += R_imagd[thr_row * 13 + thr_col];
+
+	} // check block
+
+	// ==========================================================================
 	// define our variables
 /*	__shared__ double out_real[30 * 30];
 	__shared__ double out_imag[30 * 30];
