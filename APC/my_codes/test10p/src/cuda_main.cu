@@ -214,7 +214,15 @@ void gpuKernel(double* y_n_real,
 
 	HANDLE_ERROR(cudaMalloc((void**)&test_reald, data_num * X_size * sizeof(double)));
 	HANDLE_ERROR(cudaMalloc((void**)&test_imagd, data_num * X_size * sizeof(double))); 
-	
+
+
+
+	// modifying ================================================
+	/* lets check speed of our algoritm
+	   */
+	//for (int count0 = 0; count0 < 1000; ++count0) {
+	// ==========================================================
+
 	// copy array from CPU to GPU
 	HANDLE_ERROR(cudaMemcpy(y_n_reald, y_n_real, data_num * y_n_size * sizeof(double), cudaMemcpyHostToDevice));
 	HANDLE_ERROR(cudaMemcpy(y_n_imagd, y_n_imag, data_num * y_n_size * sizeof(double), cudaMemcpyHostToDevice));
@@ -234,6 +242,7 @@ void gpuKernel(double* y_n_real,
 	// define our threads and blocks dimension
 	p12.Stop(); 
 	p23.Start(); 
+
 
 
 	for (int count1 = 0; count1 < alpha_size; ++count1) {
@@ -296,6 +305,11 @@ void gpuKernel(double* y_n_real,
 		p45.Start(); 
 
 	} // alpha iterations
+
+	// modifying =========================================================
+	//}
+	// ===================================================================
+
 
 
 	// modifying ====================================

@@ -52,9 +52,9 @@ MainWindow::MainWindow(QWidget *parent)
 
 
 	////
-	alpha = mat(1, 1); 
+	alpha = mat(2, 1); 
 	alpha(0,0) = 1.9;
-	//alpha(1,0) = 1.8;
+	alpha(1,0) = 1.8;
 	//alpha(2,0) = 1.7; 
 
 
@@ -259,7 +259,7 @@ void MainWindow::on_pushButton_clicked()
 
 	// calculate time processing
 	auto du2 = std::chrono::duration_cast<std::chrono::microseconds>(stop22 - start22);
-	std::cout << "GPUU Time: " << du2.count() << " microseconds" << std::endl;
+	std::cout << "GPUU Time: " << du2.count() / 1000.0 << " miliseconds" << std::endl;
 	std::cout << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%" << std::endl; 
 
 
@@ -325,7 +325,7 @@ void MainWindow::readLine()
 
 
 	// modifying ==========================================
-	//while (my_indx < y_noisy2.n_cols) {
+	while (my_indx < y_noisy2.n_cols) {
 	// ====================================================
 
 
@@ -369,7 +369,8 @@ void MainWindow::readLine()
 
 
 				double mse = calc_mse(gpu_apc, result_apc.st(), my_indx, 238); 
-				std::cout << "mse: " << mse << std::endl; 
+				std::cout << "MSE: " << mse << std::endl;
+				std::cout << "-------------" << std::endl; 
 
 
 				// Check if the two matrices are equal
@@ -487,8 +488,8 @@ void MainWindow::readLine()
 
 
 	// modifying ====================================
-	//my_indx ++; 
-	//}
+	my_indx ++; 
+	}
 	// ==============================================
 	
 	// Get the ending timepoint
