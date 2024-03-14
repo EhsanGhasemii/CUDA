@@ -268,7 +268,6 @@ cx_mat General_APC::algorithm2(cx_mat s, cx_mat  y_noisy, double N, mat alpha, d
     y_noisy = join_cols(y_noisy, zeros<cx_mat>(M*(N-1),1));
 	// output of y_noisy is 298 * 1
 
-
     cx_mat S = zeros<cx_mat>(N,2*N-1);
 
     cx_mat temp = s;
@@ -321,14 +320,16 @@ cx_mat General_APC::algorithm2(cx_mat s, cx_mat  y_noisy, double N, mat alpha, d
 	// ===========================================
 
 
-	int sample_test = 12 + 1; 
+	int sample_test = 12 + 0; 
 
 
     // Get the starting timepoint
 	auto start = std::chrono::high_resolution_clock::now();
 
     for (int j = 0; j < M; ++j) {									// 2x
-        temp_X = zeros<cx_mat>(1,X.size()-2*N+2);
+        
+		std::cout << "X size: " << X.size() << std::endl; 
+		temp_X = zeros<cx_mat>(1,X.size()-2*N+2);
 		cx_mat rho = elementwisePow(X, alpha(j,0));
 
 
@@ -349,8 +350,8 @@ cx_mat General_APC::algorithm2(cx_mat s, cx_mat  y_noisy, double N, mat alpha, d
 
 			// modifying ================================= 
 			/*if (i == sample_test) {
-				//cx_mat CR = y_noisy.submat(i+(N-1)*(j), 0, (j)*(N-1)+i+N-1, 0);
-				cx_mat CR = inv(C+R); 
+				cx_mat CR = y_noisy.submat(i+(N-1)*(j), 0, (j)*(N-1)+i+N-1, 0);
+				//cx_mat CR = W; 
 				std::cout << " ------ " << std::endl; 
 				std::cout << "C+R: " << std::endl; 
 				for(int i=0; i<CR.n_rows; i++){
@@ -360,6 +361,8 @@ cx_mat General_APC::algorithm2(cx_mat s, cx_mat  y_noisy, double N, mat alpha, d
 					}
 					std::cout << std::endl;
 				}
+
+				std::cout << "abbbbbbbbbbbbbbbbbbbbbbbbbbbbbbas" << std::endl; 
 			}*/
 			// ===========================================
 
@@ -369,9 +372,9 @@ cx_mat General_APC::algorithm2(cx_mat s, cx_mat  y_noisy, double N, mat alpha, d
             cx_mat t = W.t() * y_noisy.submat(i+(N-1)*(j),0,(j)*(N-1)+i+N-1,0);
 
 			// modifying =================================
-			if (i < X.size()) {
+			/*if (i < X.size()) {
 				std::cout << "i: " << i-12 << " - Finall Result: " << t << std::endl;
-			}
+			}*/
 			// ===========================================
 
 			// time4 

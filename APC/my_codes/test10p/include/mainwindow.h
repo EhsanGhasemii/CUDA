@@ -8,6 +8,11 @@
 #include "cuda_main.h"
 #include "gpuFunctions.h"
 
+
+double calc_mse (cx_mat data1, cx_mat data2, int row, int col_size);
+
+
+
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
 QT_END_NAMESPACE
@@ -33,7 +38,8 @@ private:
     cx_mat y_noisy,s;
 
 	// modifying ======================
-	cx_mat y_noisy2; 
+	cx_mat y_noisy2;
+	cx_mat gpu_apc; 
 	int my_indx;
 	mat alpha; 
 	// ================================

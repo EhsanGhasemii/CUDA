@@ -7,33 +7,27 @@
 #include <cstring>
 
 
+
 // define our functions ======================================
 void fill(float* data, int size);
 dim3 getDimGrid(const int n); 
 dim3 getDimBlock(const int n); 
-__global__ void kernelFunc(double* X_reald, 
-						   double* X_imagd,
-						   double* R_reald,
-						   double* R_imagd,
-						   double* Ss_reald,
-						   double* Ss_imagd,
-						   double* s_reald,
-						   double* s_imagd,
-						   double* alpha_reald,
-						   double* rho_reald, 
-						   double* rho_imagd,
-						   double* output_reald,
-						   double* output_imagd, 
 
-						   int X_size, 
-						   int N, 
-						   double* testd
-						   );
+
 __global__ void matrixInversion(double* inputd,
 								double* outputd, 
 								const int n, 
 								const int m
 								);	
+
+__global__ void X_to_rho(double* X_reald, 
+						 double* X_imagd, 
+						 double* rho_reald, 
+						 double* rho_imagd, 
+						 double* alpha_reald, 
+						 int alpha_indx
+						 );
+
 
 __global__ void complexMatrixInversion(double* input_reald,		// input data is "inputd"
 									   double* input_imagd,
@@ -62,27 +56,43 @@ __global__ void complexMatrixInversion(double* input_reald,		// input data is "i
 									   double* Ss_reald, 
 									   double* Ss_imagd, 
 									   double* R_reald,
-									   double* R_imagd 
+									   double* R_imagd, 
+									   
+									   double* test_reald, 
+									   double* test_imagd, 
+									   int alpha_indx, 
+									   int N, 
+									   int X_size
 
 									   );			     		// we suppose input data is squre matrix
 
 
-__global__ void kernelFunc3(double* y_n_reald, 
-							double* y_n_imagd,
-							double* CRinv_reald,	
-							double* CRinv_imagd,
-							double* s_reald,   
-							double* s_imagd,
-							double* rho_reald, 
-							double* rho_imagd, 
-							double* W_reald, 
-							double* W_imagd,
-							const int n,			
-							const int m		     	
-							);		     		
 
 void print_matrix(char* name, double* data, int size, int d_shift);
 // ==========================================================
+
+
+// modifying =================
+void testGpu(double* y_n_real
+			 //double* y_n_imag, 
+			 //double* X_real, 
+			 //double* X_imag, 
+			 //double* rho_real, 
+			 //double* rho_imag,
+			 //double* R_real, 
+			 //double* R_imag, 
+			 //double* Ss_real,
+			 //double* Ss_imag
+		) {
+
+	// print name of device
+	//struct cudaDeviceProp p;
+    //cudaGetDeviceProperties(&p, 0);
+    //printf("Device Name: %s\n", p.name);
+	GpuTimer p0; 
+	printf("salam..\n");
+}
+
 
 
 // main body
@@ -108,9 +118,13 @@ void gpuKernel(double* y_n_real,
 			   int X_size, 
 			   int R_row, 
 			   int Ss_size, 
-			   int s_size
+			   int s_size, 
+			   int alpha_size
 			   ) {
-	
+
+
+
+
 	// print name of device
 	struct cudaDeviceProp p;
     cudaGetDeviceProperties(&p, 0);
@@ -129,7 +143,7 @@ void gpuKernel(double* y_n_real,
 
 	// define our variabels
 	int N = 13; 
-	int print_flag = 1; 
+	int print_flag = 0; 
 
 	// allocate memory in CPU for calculation
 
@@ -150,8 +164,8 @@ void gpuKernel(double* y_n_real,
 	double* rho_imagd; 
 	double* output_reald;
 	double* output_imagd;
-	double* W_reald;
-	double* W_imagd;
+	//double* W_reald;
+	//double* W_imagd;
 	double* W_reald_shr2; 
 	double* W_imagd_shr2; 
 	double* W_reald_shr; 
@@ -163,6 +177,8 @@ void gpuKernel(double* y_n_real,
 	double* out_reald_shr; 
 	double* out_imagd_shr; 
 
+	double* test_reald; 
+	double* test_imagd; 
 
 
 
@@ -178,14 +194,14 @@ void gpuKernel(double* y_n_real,
 	HANDLE_ERROR(cudaMalloc((void**)&Ss_imagd, Ss_size * R_row * R_row * sizeof(double)));
 	HANDLE_ERROR(cudaMalloc((void**)&s_reald, s_size * sizeof(double)));
 	HANDLE_ERROR(cudaMalloc((void**)&s_imagd, s_size * sizeof(double))); 
-	HANDLE_ERROR(cudaMalloc((void**)&alpha_reald, 1 * sizeof(double))); // hard_code: 1 - ch..
+	HANDLE_ERROR(cudaMalloc((void**)&alpha_reald, alpha_size * sizeof(double))); 
 
-	HANDLE_ERROR(cudaMalloc((void**)&rho_reald, data_num * X_size * sizeof(double))); // hard_code: 262 - ch..
-	HANDLE_ERROR(cudaMalloc((void**)&rho_imagd, data_num * X_size * sizeof(double))); // hard_code: 262 - ch..
+	HANDLE_ERROR(cudaMalloc((void**)&rho_reald, data_num * X_size * sizeof(double))); 
+	HANDLE_ERROR(cudaMalloc((void**)&rho_imagd, data_num * X_size * sizeof(double))); 
 	HANDLE_ERROR(cudaMalloc((void**)&output_reald, data_num * X_size * R_row * R_row * sizeof(double)));
 	HANDLE_ERROR(cudaMalloc((void**)&output_imagd, data_num * X_size * R_row * R_row * sizeof(double))); 
-	HANDLE_ERROR(cudaMalloc((void**)&W_reald, data_num * X_size * sizeof(double))); // hard_code: 13 - ch..
-	HANDLE_ERROR(cudaMalloc((void**)&W_imagd, data_num * X_size * sizeof(double)));
+	//HANDLE_ERROR(cudaMalloc((void**)&W_reald, data_num * X_size * sizeof(double))); // hard_code: 13 - ch..
+	//HANDLE_ERROR(cudaMalloc((void**)&W_imagd, data_num * X_size * sizeof(double)));
 	HANDLE_ERROR(cudaMalloc((void**)&W_reald_shr2, data_num * X_size * R_row * sizeof(double)));
 	HANDLE_ERROR(cudaMalloc((void**)&W_imagd_shr2, data_num * X_size * R_row * sizeof(double)));
 	HANDLE_ERROR(cudaMalloc((void**)&W_reald_shr, data_num * X_size * R_row * sizeof(double)));
@@ -194,106 +210,101 @@ void gpuKernel(double* y_n_real,
 	HANDLE_ERROR(cudaMalloc((void**)&out_reald, data_num * X_size * R_row * R_row * sizeof(double))); 
 	HANDLE_ERROR(cudaMalloc((void**)&out_imagd, data_num * X_size * R_row * R_row * sizeof(double))); 
 	HANDLE_ERROR(cudaMalloc((void**)&out_reald_shr, data_num * X_size * R_row * R_row * sizeof(double))); 
-	HANDLE_ERROR(cudaMalloc((void**)&out_imagd_shr, data_num * X_size * R_row * R_row * sizeof(double))); 
+	HANDLE_ERROR(cudaMalloc((void**)&out_imagd_shr, data_num * X_size * R_row * R_row * sizeof(double)));
+
+	HANDLE_ERROR(cudaMalloc((void**)&test_reald, data_num * X_size * sizeof(double)));
+	HANDLE_ERROR(cudaMalloc((void**)&test_imagd, data_num * X_size * sizeof(double))); 
 	
 	// copy array from CPU to GPU
 	HANDLE_ERROR(cudaMemcpy(y_n_reald, y_n_real, data_num * y_n_size * sizeof(double), cudaMemcpyHostToDevice));
 	HANDLE_ERROR(cudaMemcpy(y_n_imagd, y_n_imag, data_num * y_n_size * sizeof(double), cudaMemcpyHostToDevice));
 	HANDLE_ERROR(cudaMemcpy(X_reald, X_real, data_num * X_size * sizeof(double), cudaMemcpyHostToDevice));
 	HANDLE_ERROR(cudaMemcpy(X_imagd, X_imag, data_num * X_size * sizeof(double), cudaMemcpyHostToDevice));
-	HANDLE_ERROR(cudaMemcpy(rho_reald, rho_real, data_num * X_size * sizeof(double), cudaMemcpyHostToDevice)); // ch.. for alpha size > 1
-	HANDLE_ERROR(cudaMemcpy(rho_imagd, rho_imag, data_num * X_size * sizeof(double), cudaMemcpyHostToDevice)); // ch.. for alpha size > 1
+	//HANDLE_ERROR(cudaMemcpy(rho_reald, rho_real, data_num * X_size * sizeof(double), cudaMemcpyHostToDevice)); // ch.. for alpha size > 1
+	//HANDLE_ERROR(cudaMemcpy(rho_imagd, rho_imag, data_num * X_size * sizeof(double), cudaMemcpyHostToDevice)); // ch.. for alpha size > 1
 	HANDLE_ERROR(cudaMemcpy(R_reald, R_real, R_row * R_row * sizeof(double), cudaMemcpyHostToDevice));
 	HANDLE_ERROR(cudaMemcpy(R_imagd, R_imag, R_row * R_row * sizeof(double), cudaMemcpyHostToDevice));
 	HANDLE_ERROR(cudaMemcpy(Ss_reald, Ss_real, Ss_size * R_row * R_row * sizeof(double), cudaMemcpyHostToDevice));
 	HANDLE_ERROR(cudaMemcpy(Ss_imagd, Ss_imag, Ss_size * R_row * R_row * sizeof(double), cudaMemcpyHostToDevice));
 	HANDLE_ERROR(cudaMemcpy(s_reald, s_real, s_size * sizeof(double), cudaMemcpyHostToDevice)); 
 	HANDLE_ERROR(cudaMemcpy(s_imagd, s_imag, s_size * sizeof(double), cudaMemcpyHostToDevice)); 
-	HANDLE_ERROR(cudaMemcpy(alpha_reald, alpha_real, 1 * sizeof(double), cudaMemcpyHostToDevice)); // hard_code: 1 - ch..
+	HANDLE_ERROR(cudaMemcpy(alpha_reald, alpha_real, alpha_size * sizeof(double), cudaMemcpyHostToDevice));
 
 	
 	// define our threads and blocks dimension
-	dim3 dimGrid = getDimGrid(data_num * X_size);
-	dim3 dimBlock = getDimBlock(1);
-
-
 	p12.Stop(); 
 	p23.Start(); 
 
 
-	// APC algorithm part1 and part2
-	kernelFunc<<< dimGrid,dimBlock >>>(X_reald, 
-									   X_imagd, 
-									   R_reald, 
-									   R_imagd, 
-									   Ss_reald, 
-									   Ss_imagd, 
-									   s_reald, 
-									   s_imagd, 
-									   alpha_reald, 
-									   rho_reald, 
-									   rho_imagd, 
-									   output_reald, 
-									   output_imagd, 
+	for (int count1 = 0; count1 < alpha_size; ++count1) {
 
-									   X_size, 
-									   N, 
-									   testd
-									   );
+		// create rho from X
+		dim3 dimGrid = getDimGrid(data_num * X_size); 
+		dim3 dimBlock = getDimBlock(1); 
+		X_to_rho<<< dimGrid, dimBlock >>>(X_reald, 
+										  X_imagd, 
+										  rho_reald, 
+										  rho_imagd, 
+										  alpha_reald, 
+										  count1
+										  ); 
+				
 
+		p23.Stop(); 
+		p34.Start(); 
 
+		// APC algorithm part3
+		dimGrid = getDimGrid(data_num * X_size); 
+		dimBlock = getDimBlock(R_row * R_row); 
+		complexMatrixInversion<<< dimGrid, dimBlock >>>(output_reald,
+														output_imagd,  
+														1, 
+														13,
 
-	p23.Stop();
-	p34.Start(); 
+														y_n_reald,		
+														y_n_imagd,		
+														s_reald,	
+														s_imagd,		
+														rho_reald,		// depend on alpha step
+														rho_imagd,		// depend on alpha step
+														X_reald,		// result
+														X_imagd,		// result
+														W_reald_shr2, 
+														W_imagd_shr2, 
+														W_reald_shr, 
+														W_imagd_shr, 
 
+														out_reald, 
+														out_imagd, 
+														out_reald_shr, 
+														out_imagd_shr, 
+														Ss_reald, 
+														Ss_imagd, 
+														R_reald, 
+														R_imagd, 
 
+														test_reald, 
+														test_imagd, 
+														count1, 
+														N, 
+														X_size
 
-	// APC algorithm part3
-	dimGrid = getDimGrid(data_num * X_size); 
-	dimBlock = getDimBlock(R_row * R_row); 
-	complexMatrixInversion<<< dimGrid, dimBlock >>>(output_reald,
-													output_imagd,  
-													1, 
-													13,
+														);
+		
 
-													y_n_reald, 
-													y_n_imagd, 
-													s_reald, 
-													s_imagd, 
-													rho_reald, 
-													rho_imagd, 
-													W_reald, 
-													W_imagd, 
-													W_reald_shr2, 
-													W_imagd_shr2, 
-													W_reald_shr, 
-													W_imagd_shr, 
+		p34.Stop(); 
+		p45.Start(); 
 
-													out_reald, 
-													out_imagd, 
-													out_reald_shr, 
-													out_imagd_shr, 
-													Ss_reald, 
-													Ss_imagd, 
-													R_reald, 
-													R_imagd 
-
-													);
-	
-
-	p34.Stop(); 
-	p45.Start(); 
-
-
+	} // alpha iterations
 
 
 	// modifying ====================================
-	HANDLE_ERROR(cudaMemcpy(test, output_reald, data_num * X_size * R_row * R_row * sizeof(double), cudaMemcpyDeviceToHost));
+	//HANDLE_ERROR(cudaMemcpy(test, output_reald, data_num * X_size * R_row * R_row * sizeof(double), cudaMemcpyDeviceToHost));
 	// ==============================================
 
 	// copy result from GPU to CPU memory
-	HANDLE_ERROR(cudaMemcpy(output_real, W_reald, data_num * X_size * sizeof(double), cudaMemcpyDeviceToHost));
-	HANDLE_ERROR(cudaMemcpy(output_imag, W_imagd, data_num * X_size * sizeof(double), cudaMemcpyDeviceToHost)); 
+	HANDLE_ERROR(cudaMemcpy(output_real, X_reald, data_num * X_size * sizeof(double), cudaMemcpyDeviceToHost));
+	HANDLE_ERROR(cudaMemcpy(output_imag, X_imagd, data_num * X_size * sizeof(double), cudaMemcpyDeviceToHost)); 
 	
 
 	// print report
@@ -303,83 +314,13 @@ void gpuKernel(double* y_n_real,
 		//print_matrix(name, a		 , n);
 
 		strcpy(name, "output_real"); 
-		print_matrix(name, output_real, X_size, 95 * X_size); 
+		print_matrix(name, output_real, X_size, 0 * X_size); 
 
 		strcpy(name, "output_imag");
-		print_matrix(name, output_imag, X_size, 95 * X_size); 
-
-		//strcpy(name, "test");
-		//print_matrix(name, test, 13, 1 * 13 * 13); 
-
-		/*strcpy(name, "inv_real");
-		print_matrix(name, inv_real, mat_size * mat_size, 0); 
-
-		strcpy(name, "inv_imag");
-		print_matrix(name, inv_imag, mat_size * mat_size, 0); */
+		print_matrix(name, output_imag, X_size, 0 * X_size); 
 		
 	}
 
-
-
-
-	// complex matrix inversion =========================================================================
-	/*double* input_real; 
-	double* input_imag;
-
-	double* inv_real;
-	double* inv_imag;
-
-	int mat_size = 3; 
-
-	input_real = (double*)malloc(mat_size * mat_size * sizeof(double)); 
-	input_imag = (double*)malloc(mat_size * mat_size * sizeof(double));
-
-	inv_real = (double*)malloc(mat_size * mat_size * sizeof(double));
-	inv_imag = (double*)malloc(mat_size * mat_sRize * sizeof(double));
-
-	input_real[0] = 1; 
-	input_real[1] = 1; 
-	input_real[2] = 2; 
-	input_real[3] = 1; 
-	input_real[4] = 0; 
-	input_real[5] = 1; 
-	input_real[6] = 0; 
-	input_real[7] = 0; 
-	input_real[8] = 0;
-
-	input_imag[0] = 1; 
-	input_imag[1] = 0; 
-	input_imag[2] = 0; 
-	input_imag[3] = 1; 
-	input_imag[4] = 2; 
-	input_imag[5] = 0; 
-	input_imag[6] = 0; 
-	input_imag[7] = 0; 
-	input_imag[8] = 2; 
-
-	double* input_reald;
-	double* input_imagd; 
-
-	double* inv_reald; 
-	double* inv_imagd;
-
-	HANDLE_ERROR(cudaMalloc((void**)&input_reald, mat_size * mat_size * sizeof(double)));
-	HANDLE_ERROR(cudaMalloc((void**)&input_imagd, mat_size * mat_size * sizeof(double)));
-
-	HANDLE_ERROR(cudaMalloc((void**)&inv_reald, mat_size * mat_size * sizeof(double)));
-	HANDLE_ERROR(cudaMalloc((void**)&inv_imagd, mat_size * mat_size * sizeof(double)));
-
-	HANDLE_ERROR(cudaMemcpy(input_reald, input_real, mat_size * mat_size * sizeof(double), cudaMemcpyHostToDevice));
-	HANDLE_ERROR(cudaMemcpy(input_imagd, input_imag, mat_size * mat_size * sizeof(double), cudaMemcpyHostToDevice));
-
-	dimGrid = getDimGrid(1); 
-	dimBlock = getDimBlock(mat_size * mat_size); 
-
-	complexMatrixInversion<<< dimGrid, dimBlock >>>(input_reald, input_imagd, inv_reald, inv_imagd, 1, mat_size); 
-
-	HANDLE_ERROR(cudaMemcpy(inv_real, inv_reald, mat_size * mat_size * sizeof(double), cudaMemcpyDeviceToHost));
-	HANDLE_ERROR(cudaMemcpy(inv_imag, inv_imagd, mat_size * mat_size * sizeof(double), cudaMemcpyDeviceToHost));*/
-	// ==================================================================================================
 
 
 
@@ -405,7 +346,6 @@ void gpuKernel(double* y_n_real,
 	// modifying ====================================
 	p15.Stop();
 	p45.Stop(); 
-
 	double t12 = 0.0; 
 	double t23 = 0.0; 
 	double t34 = 0.0; 
@@ -415,11 +355,14 @@ void gpuKernel(double* y_n_real,
 	t12 = p12.Elapsed();
 	t23 = p23.Elapsed(); 
 	t34 = p34.Elapsed();
-	t45 = p45.Elapsed();
+	t45 = p45.Elapsed(); 
 	t15 = p15.Elapsed();
 	printf("TIME OF GPU PARTS:\nt12: %g\nt23: %g\nt34: %g\nt45: %g\nt15: %g\n", t12, t23, t34, t45, t15); 
 	printf("=================================================\n");
 	// ==============================================
+
+
+
 
 }
 
@@ -439,43 +382,29 @@ dim3 getDimBlock(const int n) {
 	return dimBlock;
 }
 
-// kernelFunc
-__global__ void kernelFunc(double* X_reald, 
-						   double* X_imagd,
-						   double* R_reald,
-						   double* R_imagd,
-						   double* Ss_reald,
-						   double* Ss_imagd,
-						   double* s_reald,
-						   double* s_imagd,
-						   double* alpha_reald,
-						   double* rho_reald, 
-						   double* rho_imagd,
-						   double* output_reald,
-						   double* output_imagd, 
+__global__ void X_to_rho(double* X_reald, 
+						 double* X_imagd, 
+						 double* rho_reald, 
+						 double* rho_imagd, 
+						 double* alpha_reald, 
+						 int alpha_indx
+						 ){
 
-						   int X_size, 
-						   int N, 
-						   double* testd
-						   ) {
-	
+	double my_angle = atan2(X_imagd[blockIdx.x], X_reald[blockIdx.x]); 
+	double my_radius = sqrt(X_imagd[blockIdx.x] * X_imagd[blockIdx.x] + X_reald[blockIdx.x] * X_reald[blockIdx.x]); 
+	my_radius = pow(my_radius, alpha_reald[alpha_indx]); 
+	my_angle *= alpha_reald[alpha_indx]; 
 
-
-
-	// !!!!!!!!!!!!!!!!!!!!!!!! this will be updated for multiple chunked data !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!1
-	// create rho varible in shared memory
-/*	if (1 <= X_size && threadIdx.x == 0) {               // block_ind <= X_size
-		double my_angle = atan2(X_imagd[blockIdx.x], X_reald[blockIdx.x]); 
-		double my_radius = sqrt(X_imagd[blockIdx.x] * X_imagd[blockIdx.x] + X_reald[blockIdx.x] * X_reald[blockIdx.x]); 
-		my_radius = pow(my_radius, alpha_reald[0]); 
-		my_angle *= alpha_reald[0]; 
-
-		rho_reald[blockIdx.x] = my_radius * cos(my_angle); 
-		rho_imagd[blockIdx.x] = my_radius * sin(my_angle); 
-	}*/
-
+	rho_reald[blockIdx.x] = my_radius * cos(my_angle); 
+	rho_imagd[blockIdx.x] = my_radius * sin(my_angle); 
 }
 
+
+/* How can I improve speed of the algorithm?
+   - modify number of threads for inverse matrix algorithm. 
+   - use registers for multy writhing in a memory location. 
+   - we can not use shared memory. 
+   */
 __global__ void complexMatrixInversion(double* input_reald,		// input data is "inputd"
 									   double* input_imagd,
 							           const int n,			    // number of matrices is n
@@ -501,7 +430,13 @@ __global__ void complexMatrixInversion(double* input_reald,		// input data is "i
 									   double* Ss_reald, 
 									   double* Ss_imagd, 
 									   double* R_reald, 
-									   double* R_imagd
+									   double* R_imagd, 
+									   
+									   double* test_reald, 
+									   double* test_imagd, 
+									   int alpha_indx, 
+									   int N, 
+									   int X_size
 
 									   ) {			     		// we suppose input data is squre matrix
 
@@ -512,8 +447,10 @@ __global__ void complexMatrixInversion(double* input_reald,		// input data is "i
 	int thr_row = threadIdx.x / 13; 
 	int thr_col = threadIdx.x % 13; 
 
-	if ((blockIdx.x % 261 <= 261 - 24)) {     // blockIdx.x <= X_size - 2 * N + 2
+	if ((blockIdx.x % X_size <= X_size - 2 * N + 2)) {     // blockIdx.x <= X_size - 2 * N + 2
 		// first part of the algorithm: 25 * (matrix multilplication and addition)
+		input_reald[blockIdx.x * 169 + thr_row * 13 + thr_col] = 0.0; 
+		input_imagd[blockIdx.x * 169 + thr_row * 13 + thr_col] = 0.0; 
 		for (int count1 = 0; count1 < 25; ++count1) {
 			input_reald[blockIdx.x * 169 + thr_row * 13 + thr_col] += (rho_reald[blockIdx.x + count1] * Ss_reald[count1 * 169 + thr_row * 13 + thr_col]
 																	  - rho_imagd[blockIdx.x + count1] * Ss_imagd[count1 * 169 + thr_row * 13 + thr_col]); 
@@ -521,9 +458,7 @@ __global__ void complexMatrixInversion(double* input_reald,		// input data is "i
 																	  + rho_imagd[blockIdx.x + count1] * Ss_reald[count1 * 169 + thr_row * 13 + thr_col]);
 		}
 		
-
 		__syncthreads();
-
 
 		// second part of the algorithm: C += R
 		input_reald[blockIdx.x * 169 + thr_row * 13 + thr_col] += R_reald[thr_row * 13 + thr_col]; 
@@ -533,15 +468,20 @@ __global__ void complexMatrixInversion(double* input_reald,		// input data is "i
 
 	// ==========================================================================
 	// define our variables
-/*	__shared__ double out_real[30 * 30];
-	__shared__ double out_imag[30 * 30];
+/*	__shared__ double out_real[20 * 20];
+	__shared__ double out_imag[20 * 20];
 
-	__shared__ double out_real_shr[30 * 30]; 
-	__shared__ double out_imag_shr[30 * 30]; 
+	__shared__ double out_real_shr[20 * 20]; 
+	__shared__ double out_imag_shr[20 * 20]; 
 
-	__shared__ double in_real[30 * 30]; 
-	__shared__ double in_imag[30 * 30]; 
-*/	
+	__shared__ double in_real[20 * 20]; 
+	__shared__ double in_imag[20 * 20]; 
+*/
+
+
+
+
+
 
 	// define index of each thread
 	long long i;
@@ -558,9 +498,6 @@ __global__ void complexMatrixInversion(double* input_reald,		// input data is "i
 
 
 
-
-
-//	if (blockIdx.x <= 261 + 261 - 24 && blockIdx.x >= 261) {
 
 	if (threadIdx.x < 169) {          // i < 169 
 
@@ -580,9 +517,9 @@ __global__ void complexMatrixInversion(double* input_reald,		// input data is "i
 		}
 
 
-		
+	
 
-
+// ======================================================================================================================================
 		// Matrix inversion algorithm main body ======================================== 
 		// we use Gauss Jordan Algorithm
 		// algorithm: part1 - make the input data upper-triangular
@@ -672,23 +609,17 @@ __global__ void complexMatrixInversion(double* input_reald,		// input data is "i
 
 	} // if (i < 169)
 
+// ======================================================================================================================================
+
+
+
+
+
+
+
 
 
 	// ============================================================================
-
-	// define our variables
-/*	__shared__ double W_reald_shr[25]; 
-	__shared__ double W_imagd_shr[25]; 
-	__shared__ double W_reald_shr2[25]; 
-	__shared__ double W_imagd_shr2[25];*/
-
-
-	// =======================================
-	//double W_reald_shr[30 * 13]; // ..........
-	//double W_imagd_shr[30 * 13]; // ..........
-	//double W_reald_shr2[30 * 13]; // ch ......
-	//double W_imagd_shr2[30 * 13]; // ch .......
-	// =======================================
 
 	mat_num = 0; 
 
@@ -727,12 +658,13 @@ __global__ void complexMatrixInversion(double* input_reald,		// input data is "i
 
 
 
-	// modifying ====================================
-	/*if (threadIdx.x < 13 && blockIdx.x == 261 + 1) {
-		W_reald[261 + threadIdx.x] = out_reald_shr[blockIdx.x * 169 + threadIdx.x]; 
-		W_imagd[261 + threadIdx.x] = out_imagd_shr[blockIdx.x * 169 + threadIdx.x]; 
-	}*/
-	// ==============================================
+		// modifying ====================================
+		if (threadIdx.x < 13 && blockIdx.x == 0) {
+			test_reald[threadIdx.x] = y_n_reald[blockIdx.x + 12 + threadIdx.x]; 
+			test_imagd[threadIdx.x] = y_n_imagd[blockIdx.x + 12 + threadIdx.x]; 
+		}
+		// ==============================================
+
 
 
 	// APC algorithm part6: W.t() * y_noisy
@@ -741,17 +673,20 @@ __global__ void complexMatrixInversion(double* input_reald,		// input data is "i
 		W_reald[blockIdx.x] = 0.0; // 0.0
 		W_imagd[blockIdx.x] = 0.0; // 0.0
 
-		for (int count1 = 0; count1 < 13; ++count1) {        // count1 < 13 
-			W_reald[blockIdx.x] += W_reald_shr2[blockIdx.x * 13 + count1] * y_n_reald[blockIdx.x + 12 + count1]
-						 	     - W_imagd_shr2[blockIdx.x * 13 + count1] * y_n_imagd[blockIdx.x + 12 + count1];
-			W_imagd[blockIdx.x] += W_reald_shr2[blockIdx.x * 13 + count1] * y_n_imagd[blockIdx.x + 12 + count1]
-							     + W_imagd_shr2[blockIdx.x * 13 + count1] * y_n_reald[blockIdx.x + 12 + count1]; 
+		for (int count1 = 0; count1 < 13; ++count1) {        // !!! W_imagd <-> W_reald !!!
+			W_imagd[blockIdx.x] -= W_reald_shr2[blockIdx.x * 13 + count1] * y_n_reald[blockIdx.x + 12 + 12 * alpha_indx + count1]		// hard_code: 12
+						 	     - W_imagd_shr2[blockIdx.x * 13 + count1] * y_n_imagd[blockIdx.x + 12 + 12 * alpha_indx + count1];		// hard_code: 12
+			W_reald[blockIdx.x] += W_reald_shr2[blockIdx.x * 13 + count1] * y_n_imagd[blockIdx.x + 12 + 12 * alpha_indx + count1]		// hard_code: 12
+							     + W_imagd_shr2[blockIdx.x * 13 + count1] * y_n_reald[blockIdx.x + 12 + 12 * alpha_indx + count1];		// hard_code: 12
 		}
 	}
 
-//	} // block check 
 
 }
+
+
+
+
 
 
 
@@ -867,20 +802,23 @@ void print_matrix(char* name, double* data, int size, int d_shift) {
 
 
 
+// ========================================== using shared memory
+
+/*
 		// Matrix inversion algorithm main body ======================================== 
 		// we use Gauss Jordan Algorithm
 		// algorithm: part1 - make the input data upper-triangular
-/*		for (int count1 = 0; count1 < m - 1; ++count1) {
+		for (int count1 = 0; count1 < m - 1; ++count1) {
 			
 			// change current row when its pivot is zero
-			if ((input_reald[blockIdx.x * 169 + count1 * m + count1] == 0) && (input_imagd[blockIdx.x * 169 + count1 * m + count1] == 0)) {
+			if ((in_real[count1 * m + count1] == 0) && (in_imag[count1 * m + count1] == 0)) {
 				int count2 = count1 + 1; 
-				while ((input_reald[blockIdx.x * 169 + count2 * m + count1] == 0) && (input_imagd[blockIdx.x * 169 + count2 * m + count1] == 0) && (count2 < m)) {
+				while ((in_real[count2 * m + count1] == 0) && (in_imag[count2 * m + count1] == 0) && (count2 < m)) {
 					++count2;
 				}
 				if(mat_row == count1) {
-					input_reald[blockIdx.x * 169 + mat_ind] += input_reald[blockIdx.x * 169 + count2 * m + mat_col]; // ch ..
-					input_imagd[blockIdx.x * 169 + mat_ind] += input_imagd[blockIdx.x * 169 + count2 * m + mat_col]; // ch ..
+					in_real[mat_ind] += in_real[count2 * m + mat_col]; // ch ..
+					in_imag[mat_ind] += in_imag[count2 * m + mat_col]; // ch ..
 
 					out_real[mat_ind] += out_real[count2 * m + mat_col]; 
 					out_imag[mat_ind] += out_imag[count2 * m + mat_col]; 
@@ -957,3 +895,71 @@ void print_matrix(char* name, double* data, int size, int d_shift) {
 	} // if (i < 169)
 
 */
+// ================================================================================================
+
+
+
+
+
+
+
+
+// complex matrix inversion =========================================================================
+/*double* input_real; 
+double* input_imag;
+
+double* inv_real;
+double* inv_imag;
+
+int mat_size = 3; 
+
+input_real = (double*)malloc(mat_size * mat_size * sizeof(double)); 
+input_imag = (double*)malloc(mat_size * mat_size * sizeof(double));
+
+inv_real = (double*)malloc(mat_size * mat_size * sizeof(double));
+inv_imag = (double*)malloc(mat_size * mat_sRize * sizeof(double));
+
+input_real[0] = 1; 
+input_real[1] = 1; 
+input_real[2] = 2; 
+input_real[3] = 1; 
+input_real[4] = 0; 
+input_real[5] = 1; 
+input_real[6] = 0; 
+input_real[7] = 0; 
+input_real[8] = 0;
+
+input_imag[0] = 1; 
+input_imag[1] = 0; 
+input_imag[2] = 0; 
+input_imag[3] = 1; 
+input_imag[4] = 2; 
+input_imag[5] = 0; 
+input_imag[6] = 0; 
+input_imag[7] = 0; 
+input_imag[8] = 2; 
+
+double* input_reald;
+double* input_imagd; 
+
+double* inv_reald; 
+double* inv_imagd;
+
+HANDLE_ERROR(cudaMalloc((void**)&input_reald, mat_size * mat_size * sizeof(double)));
+HANDLE_ERROR(cudaMalloc((void**)&input_imagd, mat_size * mat_size * sizeof(double)));
+
+HANDLE_ERROR(cudaMalloc((void**)&inv_reald, mat_size * mat_size * sizeof(double)));
+HANDLE_ERROR(cudaMalloc((void**)&inv_imagd, mat_size * mat_size * sizeof(double)));
+
+HANDLE_ERROR(cudaMemcpy(input_reald, input_real, mat_size * mat_size * sizeof(double), cudaMemcpyHostToDevice));
+HANDLE_ERROR(cudaMemcpy(input_imagd, input_imag, mat_size * mat_size * sizeof(double), cudaMemcpyHostToDevice));
+
+dimGrid = getDimGrid(1); 
+dimBlock = getDimBlock(mat_size * mat_size); 
+
+complexMatrixInversion<<< dimGrid, dimBlock >>>(input_reald, input_imagd, inv_reald, inv_imagd, 1, mat_size); 
+
+HANDLE_ERROR(cudaMemcpy(inv_real, inv_reald, mat_size * mat_size * sizeof(double), cudaMemcpyDeviceToHost));
+HANDLE_ERROR(cudaMemcpy(inv_imag, inv_imagd, mat_size * mat_size * sizeof(double), cudaMemcpyDeviceToHost));*/
+// ==================================================================================================
+

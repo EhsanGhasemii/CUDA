@@ -34,7 +34,8 @@ void fun1(cx_mat s,
 		int &X_size, 
 		int &R_row, 
 		int &Ss_size, 
-		int &s_size
+		int &s_size,
+		int &alpha_size
 		); 
 
 

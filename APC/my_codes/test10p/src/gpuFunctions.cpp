@@ -27,17 +27,21 @@ void fun1(cx_mat s,
 		  int &X_size, 
 		  int &R_row, 
 		  int &Ss_size, 
-		  int &s_size
+		  int &s_size, 
+		  int &alpha_size
 		  ) {
 
+
+
 	// store each data in rows
-	y_noisy = y_noisy.t();
+	y_noisy = y_noisy.st();
 
 	// zero padding of y_noisy
     double M = alpha.size();													// input y_noisy data size is 250 * 1
     y_noisy = join_rows(zeros<cx_mat>(y_noisy.n_rows, M*(N-1)), y_noisy);
     y_noisy = join_rows(y_noisy, zeros<cx_mat>(y_noisy.n_rows, M*(N-1)));		// output y_noisy data size is 1 * 274
-	
+
+
     cx_mat S = zeros<cx_mat>(N,2*N-1);
 
     cx_mat temp = s;
@@ -78,6 +82,7 @@ void fun1(cx_mat s,
 	R_row = R.n_rows;									// suppose R is a 13 * 13 square mat
 	Ss_size = Ss.size();								// 25, 25
 	s_size = s.size();									// 13, 13
+	alpha_size = alpha.size();							// 1, 2, 3 ..
 
 	// allocate memory in CPU for calculation
 	*y_n_real = (double*)malloc(data_num * y_n_size * sizeof(double));
@@ -92,7 +97,7 @@ void fun1(cx_mat s,
 	*Ss_imag = (double*)malloc(Ss_size * s_size * s_size * sizeof(double));
 	*s_real  = (double*)malloc(s_size * sizeof(double)); 
 	*s_imag  = (double*)malloc(s_size * sizeof(double));
-	*alpha_real = (double*)malloc(alpha.size() * sizeof(double)); 
+	*alpha_real = (double*)malloc(alpha_size * sizeof(double)); 
 	*output_real  = (double*)malloc(data_num * X_size * sizeof(double)); 
 	*output_imag  = (double*)malloc(data_num * X_size * sizeof(double)); 
 	*test = (double*)malloc(data_num * X_size * R_row * R_row * sizeof(double)); 
@@ -118,13 +123,13 @@ void fun1(cx_mat s,
 			(*X_real)[i * X.n_cols + j] = X(i, j).real();       // flattening the 2D data 
 			(*X_imag)[i * X.n_cols + j] = X(i, j).imag();       // flattening the 2D data
 
-			double my_angle = atan2(X(i, j).imag(), X(i, j).real()); 
+			/*double my_angle = atan2(X(i, j).imag(), X(i, j).real()); 
 			double my_radius = sqrt(X(i, j).imag() * X(i, j).imag() + X(i, j).real() * X(i, j).real()); 
 			my_radius = pow(my_radius, alpha(0, 0)); 
 			my_angle *= alpha(0, 0); 
 
 			(*rho_real)[i * X.n_cols + j] = my_radius * cos(my_angle); 
-			(*rho_imag)[i * X.n_cols + j] = my_radius * sin(my_angle); 
+			(*rho_imag)[i * X.n_cols + j] = my_radius * sin(my_angle);*/
 		}
 	}
 
@@ -160,37 +165,6 @@ void fun1(cx_mat s,
 	// report our state
 	std::cout << "$$$$$$$$$$$$$$" << std::endl; 
 	std::cout << "man fun1 hastam .." << std::endl; 
-
-	/*cx_mat Sss = Ss[12]; 
-	std::cout << "Sss : " << std::endl;						// size: 13 * 13
-	for(int i=0; i<Sss.n_rows; i++){
-		for(int j=0; j<Sss.n_cols; j++){
-			std::cout << "Sss(" << i << ", " << j << "): ";
-			std::cout << Sss(i,j) << "\t";
-		}
-		std::cout << std::endl;
-	}
-
-	Sss = Ss[13]; 
-	std::cout << "Sss : " << std::endl;						// size: 13 * 13
-	for(int i=0; i<Sss.n_rows; i++){
-		for(int j=0; j<Sss.n_cols; j++){
-			std::cout << "Sss(" << i << ", " << j << "): ";
-			std::cout << Sss(i,j) << "\t";
-		}
-		std::cout << std::endl;
-	}
-
-	Sss = R; 
-	std::cout << "Sss : " << std::endl;						// size: 13 * 13
-	for(int i=0; i<Sss.n_rows; i++){
-		for(int j=0; j<Sss.n_cols; j++){
-			std::cout << "Sss(" << i << ", " << j << "): ";
-			std::cout << Sss(i,j) << "\t";
-		}
-		std::cout << std::endl;
-	}*/
-
 
 
 	std::cout << "$$$$$$$$$$$$$$" << std::endl; 

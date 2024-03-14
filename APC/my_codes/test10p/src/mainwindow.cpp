@@ -12,6 +12,20 @@ void my_fill(double* data, int size) {
         data[i] = 0;
 }
 
+// function2 for MSE calculation between an array and a cx_mat
+double calc_mse (cx_mat data1, cx_mat data2, int row, int col_size) {
+	/* We suppose that size of data1 is n * m and
+	 * sise of data 2 is 1 * m_prime and we just 
+	 * compaire first col_size of (row)th row of 
+	 * first data with second data. 
+	 */
+	double mse = 0.0; 
+	for (int i = 0; i < col_size; ++i) {
+		mse += (data1(row, i).real() - data2(0, i).real()) * (data1(row, i).real() - data2(0, i).real());
+		mse += (data1(row, i).imag() - data2(0, i).imag()) * (data1(row, i).imag() - data2(0, i).imag());
+	}
+	return mse; 
+}
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -41,6 +55,7 @@ MainWindow::MainWindow(QWidget *parent)
 	alpha = mat(1, 1); 
 	alpha(0,0) = 1.9;
 	//alpha(1,0) = 1.8;
+	//alpha(2,0) = 1.7; 
 
 
 
@@ -120,7 +135,7 @@ void MainWindow::on_pushButton_clicked()
 
 
 
-	//y_noisy2 = y_noisy2.submat(0, 0, y_noisy2.n_rows-1, 4);  
+	//y_noisy2 = y_noisy2.submat(0, 0, y_noisy2.n_rows-1, 0);  
 
 
 	// calculate time processing
@@ -161,7 +176,13 @@ void MainWindow::on_pushButton_clicked()
 	int R_row; 
 	int Ss_size;
 	int s_size;
+	int alpha_size; 
 	int print_flag = 1;						// print report from GPU function 
+
+
+
+
+
 
 	// prepare our GPU format data
 	// convert cx_mat of armadillo library to ordinary arrays. 
@@ -192,15 +213,16 @@ void MainWindow::on_pushButton_clicked()
 		 X_size, 
 		 R_row, 
 		 Ss_size, 
-		 s_size
+		 s_size, 
+		 alpha_size
 		 );
 
 
 
 
-	// Get the starting timepoint
-    auto start2 = std::chrono::high_resolution_clock::now();
 
+	// Get the starting timepoint
+    auto start22 = std::chrono::high_resolution_clock::now();
 
 	// main GPU kernel
 	gpuKernel(y_n_real,
@@ -225,20 +247,49 @@ void MainWindow::on_pushButton_clicked()
 			  X_size, 
 			  R_row, 
 			  Ss_size, 
-			  s_size
+			  s_size, 
+			  alpha_size
 			  );
 
 
 	
 	// Get the ending timepoint
-    auto stop2 = std::chrono::high_resolution_clock::now();
+    auto stop22 = std::chrono::high_resolution_clock::now();
 
 
 	// calculate time processing
-	auto duration = std::chrono::duration_cast<std::chrono::microseconds>(stop2 - start2);
-	std::cout << "GPUU Time: " << duration.count() << " microseconds" << std::endl;
+	auto du2 = std::chrono::duration_cast<std::chrono::microseconds>(stop22 - start22);
+	std::cout << "GPUU Time: " << du2.count() << " microseconds" << std::endl;
 	std::cout << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%" << std::endl; 
 
+
+	// store result of GPU in an armadillo cx_mat variable
+	arma::mat real_part(output_real, X_size, data_num); 
+	arma::mat imag_part(output_imag, X_size, data_num); 
+	gpu_apc = arma::cx_mat(real_part, imag_part);
+	gpu_apc = gpu_apc.st(); 
+
+
+
+
+/*  // modifying =============================================
+	double re[6] = {1.0, 2.0, 3.0, 4.0, 5.0, 6.0}; 
+	double im[6] = {7.0, 8.0, 9.0, 10.0, 11.0, 12.0}; 
+
+    arma::Mat<double> real_mat(re, 3, 2);
+    arma::Mat<double> imag_mat(im, 3, 2);
+
+    arma::cx_mat resul = arma::cx_mat(real_mat, imag_mat);
+	resul = resul.st();
+
+	for(int i=0; i<resul.n_rows; i++){
+		for(int j=0; j<resul.n_cols; j++){
+			std::cout << "resul(" << i << ", " << j << "): ";
+			std::cout << resul(i,j) << "\t";
+		}
+		std::cout << std::endl;
+	}
+*/  // modifying ============================================
 
 	// free the memory that we use
 	free(y_n_real);
@@ -254,40 +305,6 @@ void MainWindow::on_pushButton_clicked()
 	free(alpha_real); 
 	free(output_real); 
 	free(output_imag); 
-
-	// modifying =================================
-	/*cx_mat help = zeros<cx_mat>(3, 3);
-	help(0, 0) = std::complex<double>(1, 1); 
-	help(0, 1) = 1; 
-	help(0, 2) = 1; 
-	help(1, 0) = 2; 
-	help(1, 1) = 4; 
-	help(1, 2) = 6; 
-	help(2, 0) = 3; 
-	help(2, 1) = 6; 
-	help(2, 2) = 12; 
-
-	std::cout << " 555555555555555555555 " << std::endl; 
-	std::cout << "help : " << std::endl;						// size: 13 * 13
-	for(int i=0; i<help.n_rows; i++){
-		for(int j=0; j<help.n_cols; j++){
-			std::cout << "help(" << i << ", " << j << "): ";
-			std::cout << help(i,j) << "\t";
-		}
-		std::cout << std::endl;
-	}
-	cx_mat my_inv = inv(help); 
-	std::cout << "my_inv : " << std::endl;						// size: 13 * 13
-	for(int i=0; i<my_inv.n_rows; i++){
-		for(int j=0; j<my_inv.n_cols; j++){
-			std::cout << "my_inv(" << i << ", " << j << "): ";
-			std::cout << my_inv(i,j) << "\t";
-		}
-		std::cout << std::endl;
-	}
-	std::cout << " 555555555555555555555 " << std::endl;*/
-	// ===========================================
-
 
 
     readLine();
@@ -308,7 +325,7 @@ void MainWindow::readLine()
 
 
 	// modifying ==========================================
-//	while (my_indx < y_noisy2.n_cols) {
+	//while (my_indx < y_noisy2.n_cols) {
 	// ====================================================
 
 
@@ -349,18 +366,18 @@ void MainWindow::readLine()
                 cx_mat result_apc2 = apc.algorithm2(s, y_noisy, 13, alpha, 1e-5);
                 cx_mat result_mf2 = mf.algorithm(s, y_noisy, 13);
 
-				//std::cout << "size of result_apc: " << result_apc.size() << std::endl;
-				//std::cout << "size of result_mf: " << result_mf.size() << std::endl; 
-				
 
+
+				double mse = calc_mse(gpu_apc, result_apc.st(), my_indx, 238); 
+				std::cout << "mse: " << mse << std::endl; 
 
 
 				// Check if the two matrices are equal
-				if(arma::approx_equal(result_apc, result_apc2, "absdiff", 0.0001)) {
+				/*if(arma::approx_equal(result_apc, result_apc2, "absdiff", 0.0001)) {
 					std::cout << "The matrices are equal." << std::endl;
 				} else {
 					std::cout << "The matrices are not equal." << std::endl;
-				}
+				}*/
 
 
 
@@ -425,7 +442,7 @@ void MainWindow::readLine()
                 //gt[35]=-1.5;gt[80]=-49;gt[90]=0;//4
 
                 //50dB, 600m/s
-     /*           gt[35]=-1.5;gt[80]=-49;gt[90]=0;//2
+                gt[35]=-1.5;gt[80]=-49;gt[90]=0;//2
 
 
 
@@ -465,7 +482,7 @@ void MainWindow::readLine()
                 plotter->replot();
                 plotter->show();
                 //
-*/
+
 
 
 
