@@ -25,7 +25,7 @@ double calc_mse (cx_mat data1, cx_mat data2, int row, int col_size) {
 int main() {
 
 	// define batch size
-	batch_size = 8;           // !!!!!!!!!!!!!!!batch size should be an even number !!!!!!!!!!!!!!!!! 
+	batch_size = 16;           // !!!!!!!!!!!!!!!batch size should be an even number !!!!!!!!!!!!!!!!!
 
     // Load the matrix from the CSV file
 	std::vector<arma::cx_mat> my_vec;
@@ -38,7 +38,7 @@ int main() {
 		std::string str2;
 		std::string str3; 
 
-		switch (count0 % 6){
+		switch (count0 / 6){
 			case 0: 
 				str1 = "20"; 
 			break; 
@@ -57,17 +57,20 @@ int main() {
 				str2 = "10"; 
 			break; 
 			case 1: 
-				str2 = "10"; 
+				str2 = "10";
+			break; 
 			case 2:
 				str2 = "300"; 
 			break; 
 			case 3:
 				str2 = "300"; 
+			break; 
 			case 4: 
 				str2 = "600";
 			break; 
 			case 5:
 				str2 = "600"; 
+			break; 
 			default: 
 				str2 = "10"; 
 		}
@@ -83,7 +86,7 @@ int main() {
 				str3 = "I"; 
 		}
 
-		name ="./data/HighSNR_Target_Mask_" + str1 + "dBWeakerTarget_Speed_" + str2 + "mPerS_MF_in_" + str3 + ".csv"; 
+		name ="./data/HighSNR_Target_Mask_" + str1 + "dBWeakerTarget_Speed_" + str2 + "mPerS_MF_in_" + str3 + ".csv";
 		y_noisy2.load(name, arma::csv_ascii);
 		arma::mat realPart = arma::real(y_noisy2);
 		y_noisy2.set_imag(realPart);
@@ -131,7 +134,7 @@ int main() {
 	float* Ss_imag; 
 	float* s_real; 
 	float* s_imag;
-	double* alpha_real; 
+	float* alpha_real; 
 
 	double* output_real;
 	double* output_imag;

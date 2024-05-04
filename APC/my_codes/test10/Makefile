@@ -37,7 +37,7 @@ MOVE          = mv -f
 TAR           = tar -cf
 COMPRESS      = gzip -9f
 DISTNAME      = output1.0.0
-DISTDIR = /home/ehsan/GO_AHEAD/Projects/CUDA/my_codes/test8/.tmp/output1.0.0
+DISTDIR = /home/ehsan/GO_AHEAD/Projects/CUDA/my_codes/test10/.tmp/output1.0.0
 LINK          = g++
 LFLAGS        = -Wl,-O1
 LIBS          = $(SUBLIBS) -L/usr/lib64 -lcudart -larmadillo /usr/lib/x86_64-linux-gnu/libQt5Widgets.so /usr/lib/x86_64-linux-gnu/libQt5Gui.so /usr/lib/x86_64-linux-gnu/libQt5Core.so -lGL -lpthread   
@@ -445,13 +445,13 @@ compiler_moc_header_clean:
 moc_qcustomplot.cpp: Plotters/qcustomplot.h \
 		moc_predefs.h \
 		/usr/lib/qt5/bin/moc
-	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/ehsan/GO_AHEAD/Projects/CUDA/my_codes/test8/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-g++ -I/home/ehsan/GO_AHEAD/Projects/CUDA/my_codes/test8 -I/home/ehsan/GO_AHEAD/Projects/CUDA/my_codes/test8 -I/usr/include -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I/usr/include/c++/11 -I/usr/include/x86_64-linux-gnu/c++/11 -I/usr/include/c++/11/backward -I/usr/lib/gcc/x86_64-linux-gnu/11/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include Plotters/qcustomplot.h -o moc_qcustomplot.cpp
+	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/ehsan/GO_AHEAD/Projects/CUDA/my_codes/test10/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-g++ -I/home/ehsan/GO_AHEAD/Projects/CUDA/my_codes/test10 -I/home/ehsan/GO_AHEAD/Projects/CUDA/my_codes/test10 -I/usr/include -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I/usr/include/c++/11 -I/usr/include/x86_64-linux-gnu/c++/11 -I/usr/include/c++/11/backward -I/usr/lib/gcc/x86_64-linux-gnu/11/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include Plotters/qcustomplot.h -o moc_qcustomplot.cpp
 
 moc_jcustomplot.cpp: Plotters/jcustomplot.h \
 		Plotters/qcustomplot.h \
 		moc_predefs.h \
 		/usr/lib/qt5/bin/moc
-	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/ehsan/GO_AHEAD/Projects/CUDA/my_codes/test8/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-g++ -I/home/ehsan/GO_AHEAD/Projects/CUDA/my_codes/test8 -I/home/ehsan/GO_AHEAD/Projects/CUDA/my_codes/test8 -I/usr/include -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I/usr/include/c++/11 -I/usr/include/x86_64-linux-gnu/c++/11 -I/usr/include/c++/11/backward -I/usr/lib/gcc/x86_64-linux-gnu/11/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include Plotters/jcustomplot.h -o moc_jcustomplot.cpp
+	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/ehsan/GO_AHEAD/Projects/CUDA/my_codes/test10/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-g++ -I/home/ehsan/GO_AHEAD/Projects/CUDA/my_codes/test10 -I/home/ehsan/GO_AHEAD/Projects/CUDA/my_codes/test10 -I/usr/include -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I/usr/include/c++/11 -I/usr/include/x86_64-linux-gnu/c++/11 -I/usr/include/c++/11/backward -I/usr/lib/gcc/x86_64-linux-gnu/11/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include Plotters/jcustomplot.h -o moc_jcustomplot.cpp
 
 moc_mainwindow.cpp: include/mainwindow.h \
 		Plotters/qcustomplot.h \
@@ -460,7 +460,7 @@ moc_mainwindow.cpp: include/mainwindow.h \
 		include/gpuFunctions.h \
 		moc_predefs.h \
 		/usr/lib/qt5/bin/moc
-	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/ehsan/GO_AHEAD/Projects/CUDA/my_codes/test8/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-g++ -I/home/ehsan/GO_AHEAD/Projects/CUDA/my_codes/test8 -I/home/ehsan/GO_AHEAD/Projects/CUDA/my_codes/test8 -I/usr/include -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I/usr/include/c++/11 -I/usr/include/x86_64-linux-gnu/c++/11 -I/usr/include/c++/11/backward -I/usr/lib/gcc/x86_64-linux-gnu/11/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include include/mainwindow.h -o moc_mainwindow.cpp
+	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/ehsan/GO_AHEAD/Projects/CUDA/my_codes/test10/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-g++ -I/home/ehsan/GO_AHEAD/Projects/CUDA/my_codes/test10 -I/home/ehsan/GO_AHEAD/Projects/CUDA/my_codes/test10 -I/usr/include -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I/usr/include/c++/11 -I/usr/include/x86_64-linux-gnu/c++/11 -I/usr/include/c++/11/backward -I/usr/lib/gcc/x86_64-linux-gnu/11/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include include/mainwindow.h -o moc_mainwindow.cpp
 
 compiler_moc_objc_header_make_all:
 compiler_moc_objc_header_clean:

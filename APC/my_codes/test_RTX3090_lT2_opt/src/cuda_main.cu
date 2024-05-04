@@ -23,9 +23,9 @@ __global__ void matrixInversion(double* inputd,
 
 __global__ void X_to_rho(double* X_reald, 
 						 double* X_imagd, 
-						 double* rho_reald, 
-						 double* rho_imagd, 
-						 double* alpha_reald, 
+						 float* rho_reald, 
+						 float* rho_imagd, 
+						 float* alpha_reald, 
 						 int alpha_indx
 						 );
 
@@ -43,8 +43,8 @@ __global__ void complexMatrixInversion(//double* input_reald,		// input data is 
 									   float* y_n_imagd, 
 									   float* s_reald, 
 									   float* s_imagd, 
-									   double* rho_reald, 
-									   double* rho_imagd, 
+									   float* rho_reald, 
+									   float* rho_imagd, 
 									   double* W_reald, 
 									   double* W_imagd, 
 									  // double* W_reald_shr2, 
@@ -110,7 +110,7 @@ void gpuKernel(float* y_n_real,
 			   float* Ss_imag, 
 			   float* s_real, 
 			   float* s_imag,
-			   double* alpha_real,
+			   float* alpha_real,
 			   double* output_real,
 			   double* output_imag,
 	//		   double* test_real,
@@ -127,6 +127,7 @@ void gpuKernel(float* y_n_real,
 			   ) {
 
 
+	
 
 
 	// print name of device
@@ -146,6 +147,11 @@ void gpuKernel(float* y_n_real,
 	// ==============================================================
 
 	// define our variabels
+
+	double my_eps = 0.0; 
+	if (batch_size % 2 == 1){
+		my_eps = 0.000001;
+	}
 	int N = 13; 
 	int print_flag = 0; 
 
@@ -162,10 +168,10 @@ void gpuKernel(float* y_n_real,
 	float* Ss_imagd; 
 	float* s_reald; 
 	float* s_imagd;
-	double* alpha_reald;
+	float* alpha_reald;
 
-	double* rho_reald; 
-	double* rho_imagd; 
+	float* rho_reald; 
+	float* rho_imagd; 
 //	double* output_reald;
 //	double* output_imagd;
 //	double* W_reald_shr2; 
@@ -194,10 +200,10 @@ void gpuKernel(float* y_n_real,
 	HANDLE_ERROR(cudaMalloc((void**)&Ss_imagd, Ss_size * R_row * R_row * sizeof(float)));				// size: Ss_size * R_row * R_row			space: <1MB
 	HANDLE_ERROR(cudaMalloc((void**)&s_reald, s_size * sizeof(float)));								// size: s_size								space: <1MB
 	HANDLE_ERROR(cudaMalloc((void**)&s_imagd, s_size * sizeof(float)));								// size: s_size								space: <1MB
-	HANDLE_ERROR(cudaMalloc((void**)&alpha_reald, alpha_size * sizeof(double)));						// size: alpha_size							space: <1MB
+	HANDLE_ERROR(cudaMalloc((void**)&alpha_reald, alpha_size * sizeof(float)));						// size: alpha_size							space: <1MB
 
-	HANDLE_ERROR(cudaMalloc((void**)&rho_reald, batch_size * data_num * X_size * sizeof(double)));						// size: batch_size * data_num * X_size
-	HANDLE_ERROR(cudaMalloc((void**)&rho_imagd, batch_size * data_num * X_size * sizeof(double)));						// size: batch_size * data_num * X_size
+	HANDLE_ERROR(cudaMalloc((void**)&rho_reald, batch_size * data_num * X_size * sizeof(float)));						// size: batch_size * data_num * X_size
+	HANDLE_ERROR(cudaMalloc((void**)&rho_imagd, batch_size * data_num * X_size * sizeof(float)));						// size: batch_size * data_num * X_size
 //	HANDLE_ERROR(cudaMalloc((void**)&output_reald, batch_size * data_num * X_size * R_row * R_row * sizeof(double)));	// size: batch_size * data_num * X_size * R_row * R_row		space: 38MB
 //	HANDLE_ERROR(cudaMalloc((void**)&output_imagd, batch_size * data_num * X_size * R_row * R_row * sizeof(double)));	// size: batch_size * data_num * X_size * R_row * R_row		space: 38MB
 //	HANDLE_ERROR(cudaMalloc((void**)&W_reald_shr2, batch_size * data_num * X_size * R_row * sizeof(double)));			// size: batch_size * data_num * X_size * R_row				space: 4MB
@@ -229,7 +235,7 @@ void gpuKernel(float* y_n_real,
 	HANDLE_ERROR(cudaMemcpy(Ss_imagd, Ss_imag, Ss_size * R_row * R_row * sizeof(float), cudaMemcpyHostToDevice));
 	HANDLE_ERROR(cudaMemcpy(s_reald, s_real, s_size * sizeof(float), cudaMemcpyHostToDevice)); 
 	HANDLE_ERROR(cudaMemcpy(s_imagd, s_imag, s_size * sizeof(float), cudaMemcpyHostToDevice)); 
-	HANDLE_ERROR(cudaMemcpy(alpha_reald, alpha_real, alpha_size * sizeof(double), cudaMemcpyHostToDevice));
+	HANDLE_ERROR(cudaMemcpy(alpha_reald, alpha_real, alpha_size * sizeof(float), cudaMemcpyHostToDevice));
 
 	
 	// define our threads and blocks dimension
@@ -258,7 +264,7 @@ void gpuKernel(float* y_n_real,
 		p34.Start(); 
 
 		// APC algorithm part3
-		dimGrid = getDimGrid((batch_size/2) * data_num * X_size);                // batch_size should be an even number
+		dimGrid = getDimGrid((ceil((batch_size / 2.0) * data_num) - my_eps) * X_size);                // batch_size should be an even number
 		dimBlock = getDimBlock(2 * R_row); 
 		complexMatrixInversion<<< dimGrid, dimBlock >>>(//output_reald,
 														//output_imagd,  
@@ -290,7 +296,7 @@ void gpuKernel(float* y_n_real,
 														count1, 
 														N, 
 														X_size, 
-														(batch_size/2) * data_num, 
+														(ceil((batch_size / 2.0) * data_num) - my_eps), 
 														batch_size
 
 														);
@@ -411,9 +417,9 @@ dim3 getDimBlock(const int n) {
 
 __global__ void X_to_rho(double* X_reald, 
 						 double* X_imagd, 
-						 double* rho_reald, 
-						 double* rho_imagd, 
-						 double* alpha_reald, 
+						 float* rho_reald, 
+						 float* rho_imagd, 
+						 float* alpha_reald, 
 						 int alpha_indx
 						 ){
 
@@ -441,8 +447,8 @@ __global__ void complexMatrixInversion(//double* input_reald,		// input data is 
 									   float* y_n_imagd, 
 									   float* s_reald, 
 									   float* s_imagd, 
-									   double* rho_reald, 
-									   double* rho_imagd, 
+									   float* rho_reald, 
+									   float* rho_imagd, 
 									   double* W_reald, 
 									   double* W_imagd, 
 									  // double* W_reald_shr2, 
@@ -516,34 +522,34 @@ __global__ void complexMatrixInversion(//double* input_reald,		// input data is 
 		for (int thr_row = 0; thr_row < 13; ++thr_row) {
 			in_real[thr_batch * 169 + thr_row * 13 + thr_col] = 0.0; 
 			in_imag[thr_batch * 169 + thr_row * 13 + thr_col] = 0.0;
-			__syncthreads();  // APPP
+//!			__syncthreads();  // APPP
 		}
 		
 
-		__syncthreads();  // AP
+//!		__syncthreads();  // AP
 		for (int count1 = 0; count1 < 25; ++count1) {         // 25
-			__syncthreads();  // AP
+//!			__syncthreads();  // AP
 			for (int thr_row = 0; thr_row < 13; ++thr_row) {
-				__syncthreads(); // APPP
+//!				__syncthreads(); // APPP
 				in_real[thr_batch*169+thr_row*13+thr_col] += (rho_reald[thr_batch*data_num*X_size+blockIdx.x+count1]*Ss_reald[count1*169+thr_row*13+thr_col]
 														    - rho_imagd[thr_batch*data_num*X_size+blockIdx.x+count1]*Ss_imagd[count1*169+thr_row*13+thr_col]); 
-				__syncthreads();  // AP
+//!				__syncthreads();  // AP
 				in_imag[thr_batch*169+thr_row*13+thr_col] += (rho_reald[thr_batch*data_num*X_size+blockIdx.x+count1]*Ss_imagd[count1*169+thr_row*13+thr_col]
 															+ rho_imagd[thr_batch*data_num*X_size+blockIdx.x+count1]*Ss_reald[count1*169+thr_row*13+thr_col]);
-				__syncthreads(); // APPP
+//!				__syncthreads(); // APPP
 			}
-		__syncthreads();  // AP
+//!		__syncthreads();  // AP
 		}
 	
-		__syncthreads();
+////		__syncthreads();
 
 
 		// second part of the algorithm: C += R
 		for (int thr_row = 0; thr_row < 13; ++thr_row) {
 			in_real[thr_batch * 169 + thr_row * 13 + thr_col] += R_reald[thr_row * 13 + thr_col]; 
-			__syncthreads(); // APPP
+//!			__syncthreads(); // APPP
 			in_imag[thr_batch * 169 + thr_row * 13 + thr_col] += R_imagd[thr_row * 13 + thr_col];
-			__syncthreads(); // APPP
+////			__syncthreads(); // APPP
 		}
 
 
@@ -570,7 +576,7 @@ __global__ void complexMatrixInversion(//double* input_reald,		// input data is 
 		// we use Gauss Jordan Algorithm
 		for (int count1 = 0; count1 < m - 1; ++count1) {
 		
-			__syncthreads();  // AP
+////			__syncthreads();  // AP
 
 			// change current row when its pivot is zero
 			if ((in_real[thr_batch * 169 + count1 * m + count1] == 0) && (in_imag[thr_batch * 169 + count1 * m + count1] == 0)) {
@@ -583,10 +589,10 @@ __global__ void complexMatrixInversion(//double* input_reald,		// input data is 
 
 				out_real[thr_batch * 169 + count1 * 13 + mat_col] += out_real[thr_batch * 169 + count2 * m + mat_col]; 
 				out_imag[thr_batch * 169 + count1 * 13 + mat_col] += out_imag[thr_batch * 169 + count2 * m + mat_col]; 
-				__syncthreads(); 	
+//?				__syncthreads(); 	
 			}
 
-		__syncthreads();  // AP
+////		__syncthreads();  // AP
 
 
 			// algorithm: part1 - make the input data upper-triangular
@@ -594,7 +600,7 @@ __global__ void complexMatrixInversion(//double* input_reald,		// input data is 
 				double mul_real = in_real[thr_batch * 169 + mat_row* m + count1] *in_real[thr_batch * 169 + count1 * m + count1]
 								+ in_imag[thr_batch * 169 + mat_row* m + count1] *in_imag[thr_batch * 169 + count1 * m + count1];
 					 mul_real /= (in_real[thr_batch * 169 + count1 * m + count1] *in_real[thr_batch * 169 + count1 * m + count1]
-								+ in_imag[thr_batch * 169 + count1 * m + count1] *in_imag[thr_batch * 169 + count1 * m + count1]); 
+								+ in_imag[thr_batch * 169 + count1 * m + count1] *in_imag[thr_batch * 169 + count1 * m + count1]);
 
 				double mul_imag = in_imag[thr_batch * 169 + mat_row* m + count1] *in_real[thr_batch * 169 + count1 * m + count1]
 								- in_real[thr_batch * 169 + mat_row* m + count1] *in_imag[thr_batch * 169 + count1 * m + count1];
@@ -605,24 +611,24 @@ __global__ void complexMatrixInversion(//double* input_reald,		// input data is 
 																	- mul_imag * in_imag[thr_batch * 169 + count1 * m + mat_col]); 
 				in_imag[thr_batch * 169 + mat_row * 13 + mat_col] -= (mul_real * in_imag[thr_batch * 169 + count1 * m + mat_col]
 																	+ mul_imag * in_real[thr_batch * 169 + count1 * m + mat_col]);
-				__syncthreads(); // APPP
+//?				__syncthreads(); // APPP
 
 				out_real[thr_batch * 169 + mat_row * 13 + mat_col] -= (mul_real * out_real[thr_batch * 169 + count1 * m + mat_col]
 																	 - mul_imag * out_imag[thr_batch * 169 + count1 * m + mat_col]);
 				out_imag[thr_batch * 169 + mat_row * 13 + mat_col] -= (mul_real * out_imag[thr_batch * 169 + count1 * m + mat_col]
 																	 + mul_imag * out_real[thr_batch * 169 + count1 * m + mat_col]);
-				__syncthreads(); // APPP
+//!				__syncthreads(); // APPP
 
 			}
 
 			// wait till all the data is changed
-			__syncthreads(); 
+//?			__syncthreads(); 
 		}
 
 		// algorithm: part2 - make the input data lower-triangular
 		for (int count1 = m - 1; count1 > 0; --count1) {
 		
-			__syncthreads();  // AP
+////			__syncthreads();  // AP
 
 			for (int mat_row = count1 - 1; mat_row >= 0; --mat_row) {
 				double mul_real = in_real[thr_batch * 169 + mat_row* m + count1] *in_real[thr_batch * 169 + count1 * m + count1]
@@ -639,17 +645,17 @@ __global__ void complexMatrixInversion(//double* input_reald,		// input data is 
 																	- mul_imag * in_imag[thr_batch * 169 + count1 * m + mat_col]); 
 				in_imag[thr_batch * 169 + mat_row * 13 + mat_col] -= (mul_real * in_imag[thr_batch * 169 + count1 * m + mat_col]
 																	+ mul_imag * in_real[thr_batch * 169 + count1 * m + mat_col]);
-				__syncthreads(); // APPP
+//?				__syncthreads(); // APPP
 
 				out_real[thr_batch * 169 + mat_row * 13 + mat_col] -= (mul_real * out_real[thr_batch * 169 + count1 * m + mat_col]
 																	 - mul_imag * out_imag[thr_batch * 169 + count1 * m + mat_col]);
 				out_imag[thr_batch * 169 + mat_row * 13 + mat_col] -= (mul_real * out_imag[thr_batch * 169 + count1 * m + mat_col]
 																	 + mul_imag * out_real[thr_batch * 169 + count1 * m + mat_col]);
-				__syncthreads(); // APPP
+//?				__syncthreads(); // APPP
 			}
 
 			// wait till all the data is changed
-			__syncthreads(); 
+////			__syncthreads(); 
 		}
 
 
@@ -668,7 +674,7 @@ __global__ void complexMatrixInversion(//double* input_reald,		// input data is 
 						/ (in_real[thr_batch * 169 + mat_row * m + mat_row] * in_real[thr_batch * 169 + mat_row * m + mat_row]
 						 + in_imag[thr_batch * 169 + mat_row * m + mat_row] * in_imag[thr_batch * 169 + mat_row * m + mat_row]);
 		}
-		__syncthreads();  // AP
+////		__syncthreads();  // AP
 
 
 
@@ -697,7 +703,7 @@ __global__ void complexMatrixInversion(//double* input_reald,		// input data is 
 		W_real_shr[thr_batch * 13 + mat_col] = 0.0; 
 		W_imag_shr[thr_batch * 13 + mat_col] = 0.0; 
 
-	__syncthreads(); 
+////	__syncthreads(); 
 
 
 
@@ -726,7 +732,7 @@ __global__ void complexMatrixInversion(//double* input_reald,		// input data is 
 		
 
 
-	__syncthreads(); 
+////	__syncthreads(); 
 	
 	// APC algorithm part5: W = inv(C+R) * s * rho
 		W_real_temp = W_real_shr[thr_batch * 13 + mat_col]; 
@@ -735,7 +741,7 @@ __global__ void complexMatrixInversion(//double* input_reald,		// input data is 
 											- W_imag_temp * rho_imagd[thr_batch*data_num*X_size+blockIdx.x+12];
 		W_imag_shr[thr_batch * 13 + mat_col]= W_real_temp * rho_imagd[thr_batch*data_num*X_size+blockIdx.x+12]
 											+ W_imag_temp * rho_reald[thr_batch*data_num*X_size+blockIdx.x+12];
-		__syncthreads(); 
+////		__syncthreads(); 
 
 
 

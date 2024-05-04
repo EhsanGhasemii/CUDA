@@ -15,7 +15,9 @@ void fun1(cx_mat s,
 		double** y_n_real,
 		double** y_n_imag,
 		double** X_real, 
-		double** X_imag, 
+		double** X_imag,
+	//	double** rho_real, 
+	//	double** rho_imag, 
 		double** R_real, 
 		double** R_imag,
 		double** Ss_real,
@@ -25,14 +27,17 @@ void fun1(cx_mat s,
 		double** alpha_real,
 		double** output_real,
 		double** output_imag,
-		double** test, 
+		double** test_real,
+		double** test_imag, 
 
+		int &batch_size, 
 		int data_num, 
 		int &y_n_size, 
 		int &X_size, 
 		int &R_row, 
 		int &Ss_size, 
-		int &s_size
+		int &s_size,
+		int &alpha_size
 		); 
 
 

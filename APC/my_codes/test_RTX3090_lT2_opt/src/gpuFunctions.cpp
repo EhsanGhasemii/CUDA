@@ -21,7 +21,7 @@ void fun1(cx_mat s,
 		  float** Ss_imag,
 		  float** s_real,
 		  float** s_imag,
-		  double** alpha_real,
+		  float** alpha_real,
 		  double** output_real,
 		  double** output_imag,
 //		  double** test_real,
@@ -104,7 +104,7 @@ void fun1(cx_mat s,
 			*Ss_imag = (float*)malloc(Ss_size * s_size * s_size * sizeof(float));				// size: Ss_size * s_size * s_size
 			*s_real = (float*)malloc(s_size * sizeof(float));									// size: s_size
 			*s_imag = (float*)malloc(s_size * sizeof(float));									// size: s_size
-			*alpha_real = (double*)malloc(alpha_size * sizeof(double));							// size: alpha_size
+			*alpha_real = (float*)malloc(alpha_size * sizeof(float));							// size: alpha_size
 			*output_real = (double*)malloc(batch_size * data_num * X_size * sizeof(double));	// size: batch_size * data_num * X_size
 			*output_imag = (double*)malloc(batch_size * data_num * X_size * sizeof(double));	// size: batch_size * data_num * X_size
 

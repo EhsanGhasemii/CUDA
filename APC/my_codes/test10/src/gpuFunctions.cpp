@@ -8,7 +8,7 @@ void fun1(cx_mat s,
 		  double** y_n_real,
 		  double** y_n_imag,
 		  double** X_real, 
-		  double** X_imag, 
+		  double** X_imag,
 		  double** R_real, 
 		  double** R_imag,
 		  double** Ss_real,
@@ -18,24 +18,32 @@ void fun1(cx_mat s,
 		  double** alpha_real,
 		  double** output_real,
 		  double** output_imag,
-		  double** test, 
+		  double** test_real,
+		  double** test_imag, 
 
+		  int &batch_size, 
 		  int data_num, 
 		  int &y_n_size, 
 		  int &X_size, 
 		  int &R_row, 
 		  int &Ss_size, 
-		  int &s_size
+		  int &s_size, 
+		  int &alpha_size
 		  ) {
 
+
+	// set batch_size for proceesing over this amount of batches of data
+	batch_size = 1; 	
+
 	// store each data in rows
-	y_noisy = y_noisy.t();
+	y_noisy = y_noisy.st();
 
 	// zero padding of y_noisy
     double M = alpha.size();													// input y_noisy data size is 250 * 1
     y_noisy = join_rows(zeros<cx_mat>(y_noisy.n_rows, M*(N-1)), y_noisy);
     y_noisy = join_rows(y_noisy, zeros<cx_mat>(y_noisy.n_rows, M*(N-1)));		// output y_noisy data size is 1 * 274
-	
+
+
     cx_mat S = zeros<cx_mat>(N,2*N-1);
 
     cx_mat temp = s;
@@ -76,24 +84,28 @@ void fun1(cx_mat s,
 	R_row = R.n_rows;									// suppose R is a 13 * 13 square mat
 	Ss_size = Ss.size();								// 25, 25
 	s_size = s.size();									// 13, 13
+	alpha_size = alpha.size();							// 1, 2, 3 ..
 
 	// allocate memory in CPU for calculation
-	*y_n_real = (double*)malloc(data_num * y_n_size * sizeof(double));
-	*y_n_imag = (double*)malloc(data_num * y_n_size * sizeof(double));
-	*X_real  = (double*)malloc(data_num * X_size * sizeof(double));
-	*X_imag  = (double*)malloc(data_num * X_size * sizeof(double));
-	*R_real  = (double*)malloc(R_row * R_row * sizeof(double)); 
-	*R_imag  = (double*)malloc(R_row * R_row * sizeof(double)); 
-	*Ss_real = (double*)malloc(Ss_size * s_size * s_size * sizeof(double)); 
-	*Ss_imag = (double*)malloc(Ss_size * s_size * s_size * sizeof(double));
-	*s_real  = (double*)malloc(s_size * sizeof(double)); 
-	*s_imag  = (double*)malloc(s_size * sizeof(double));
-	*alpha_real = (double*)malloc(alpha.size() * sizeof(double)); 
-	*output_real  = (double*)malloc(data_num * X_size * sizeof(double)); 
-	*output_imag  = (double*)malloc(data_num * X_size * sizeof(double)); 
-	*test = (double*)malloc(data_num * X_size * R_row * R_row * sizeof(double)); 
+	*y_n_real = (double*)malloc(batch_size * data_num * y_n_size * sizeof(double));		// size: batch_size * data_num * y_n_size
+	*y_n_imag = (double*)malloc(batch_size * data_num * y_n_size * sizeof(double));		// size: batch_size * data_num * y_n_size
+	*X_real = (double*)malloc(batch_size * data_num * X_size * sizeof(double));			// size: batch_size * data_num * X_size
+	*X_imag = (double*)malloc(batch_size * data_num * X_size * sizeof(double));			// size: batch_size * data_num * X_size
+	*R_real = (double*)malloc(R_row * R_row * sizeof(double));							// size: R_row * R_row
+	*R_imag = (double*)malloc(R_row * R_row * sizeof(double));							// size: R_row * R_row
+	*Ss_real = (double*)malloc(Ss_size * s_size * s_size * sizeof(double));				// size: Ss_size * s_size * s_size 
+	*Ss_imag = (double*)malloc(Ss_size * s_size * s_size * sizeof(double));				// size: Ss_size * s_size * s_size
+	*s_real = (double*)malloc(s_size * sizeof(double));									// size: s_size
+	*s_imag = (double*)malloc(s_size * sizeof(double));									// size: s_size
+	*alpha_real = (double*)malloc(alpha_size * sizeof(double));							// size: alpha_size
+	*output_real = (double*)malloc(batch_size * data_num * X_size * sizeof(double));	// size: batch_size * data_num * X_size
+	*output_imag = (double*)malloc(batch_size * data_num * X_size * sizeof(double));	// size: batch_size * data_num * X_size
+
+	*test_real = (double*)malloc(batch_size * data_num * X_size * R_row * R_row * sizeof(double)); 
+	*test_imag = (double*)malloc(batch_size * data_num * X_size * R_row * R_row * sizeof(double)); 
 
 	// check size of the variables
+	std::cout << "batch_size: " << batch_size << std::endl; 
 	std::cout << "data_num: " << data_num << std::endl; 
 	std::cout << "y_n_size: " << y_n_size << std::endl; 
 	std::cout << "X_size: " << X_size << std::endl; 
@@ -101,18 +113,22 @@ void fun1(cx_mat s,
 	std::cout << "Ss_size: " << Ss_size << std::endl; 
 	std::cout << "s_size: " << s_size << std::endl; 
 
-	// transfering data from armadillo to ordinary arrays to use in GPU kernels	
-	for(int i=0; i<y_noisy.n_rows; ++i){
-		for(int j=0; j<y_noisy.n_cols; ++j){
-			(*y_n_real)[i * X.n_cols + j] = y_noisy(i, j).real();       // flattening the 2D data 
-			(*y_n_imag)[i * X.n_cols + j] = y_noisy(i, j).imag();       // flattening the 2D data
+	// transfering data from armadillo to ordinary arrays to use in GPU kernels
+	for(int k=0; k<batch_size; ++k){
+		for(int i=0; i<y_noisy.n_rows; ++i){
+			for(int j=0; j<y_noisy.n_cols; ++j){
+				(*y_n_real)[k * y_noisy.n_rows * X.n_cols + i * X.n_cols + j] = y_noisy(i, j).real();       // flattening the 2D data 
+				(*y_n_imag)[k * y_noisy.n_rows * X.n_cols + i * X.n_cols + j] = y_noisy(i, j).imag();       // flattening the 2D data
+			}
 		}
 	}
-
-	for(int i=0; i<X.n_rows; ++i){
-		for(int j=0; j<X.n_cols; ++j){
-			(*X_real)[i * X.n_cols + j] = X(i, j).real();       // flattening the 2D data 
-			(*X_imag)[i * X.n_cols + j] = X(i, j).imag();       // flattening the 2D data
+	
+	for(int k=0; k<batch_size; ++k){
+		for(int i=0; i<X.n_rows; ++i){
+			for(int j=0; j<X.n_cols; ++j){
+				(*X_real)[k * X.n_rows * X.n_cols + i * X.n_cols + j] = X(i, j).real();       // flattening the 2D data 
+				(*X_imag)[k * X.n_rows * X.n_cols + i * X.n_cols + j] = X(i, j).imag();       // flattening the 2D data
+			}
 		}
 	}
 
@@ -145,43 +161,6 @@ void fun1(cx_mat s,
 	std::copy(alpha.memptr(), alpha.memptr() + alpha.size(), (*alpha_real));
 
 
-	// report our state
-	std::cout << "$$$$$$$$$$$$$$" << std::endl; 
-	std::cout << "man fun1 hastam .." << std::endl; 
-
-	/*cx_mat Sss = Ss[12]; 
-	std::cout << "Sss : " << std::endl;						// size: 13 * 13
-	for(int i=0; i<Sss.n_rows; i++){
-		for(int j=0; j<Sss.n_cols; j++){
-			std::cout << "Sss(" << i << ", " << j << "): ";
-			std::cout << Sss(i,j) << "\t";
-		}
-		std::cout << std::endl;
-	}
-
-	Sss = Ss[13]; 
-	std::cout << "Sss : " << std::endl;						// size: 13 * 13
-	for(int i=0; i<Sss.n_rows; i++){
-		for(int j=0; j<Sss.n_cols; j++){
-			std::cout << "Sss(" << i << ", " << j << "): ";
-			std::cout << Sss(i,j) << "\t";
-		}
-		std::cout << std::endl;
-	}
-
-	Sss = R; 
-	std::cout << "Sss : " << std::endl;						// size: 13 * 13
-	for(int i=0; i<Sss.n_rows; i++){
-		for(int j=0; j<Sss.n_cols; j++){
-			std::cout << "Sss(" << i << ", " << j << "): ";
-			std::cout << Sss(i,j) << "\t";
-		}
-		std::cout << std::endl;
-	}*/
-
-
-
-	std::cout << "$$$$$$$$$$$$$$" << std::endl; 
 
 
 }
