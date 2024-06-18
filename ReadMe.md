@@ -15,6 +15,8 @@ make
 ## Inverse matrix calculation with cuda
 [link](https://github.com/ZhengzhongSun/Matrix-Inversion-with-CUDA?tab=readme-ov-file)
 
-
+## Final Versions
+Final versions of these codes are 'fv_modified' and 'Server_based'
+![Image Description](/images/test1.png)
 
 
