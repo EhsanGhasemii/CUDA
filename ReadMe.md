@@ -7,8 +7,7 @@ Once you have a .pro file, you can use qmake to generate a Makefile for your pro
 
 Here are the commands you would use:
 ```bash
-qmake -project
-qmake
+qmake config.pro
 make
 ```
 
