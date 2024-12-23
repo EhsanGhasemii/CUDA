@@ -1,2 +1,0 @@
-1. using shared memory version of complex matrix inversion. 
-2. delete additional input memories and use registers. 
