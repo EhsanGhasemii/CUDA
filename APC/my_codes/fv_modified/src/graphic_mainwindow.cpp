@@ -1,6 +1,8 @@
 #include "../include/graphic_mainwindow.h"
 #include "ui_graphic_mainwindow.h"
+
 #include <QDebug>
+#include <QApplication>
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -13,8 +15,12 @@ MainWindow::MainWindow(QWidget *parent)
     ui->comboBox->addItem("2");
     ui->comboBox->addItem("3");
 
-    // Connect the QPushButton clicked signal to the slot
+    // Ensure single connection
+    disconnect(ui->submitButton, &QPushButton::clicked, this, &MainWindow::on_submitButton_clicked);
     connect(ui->submitButton, &QPushButton::clicked, this, &MainWindow::on_submitButton_clicked);
+
+    // Debug statement to ensure connection is established only once
+    qDebug() << "Button signal connected.";
 }
 
 MainWindow::~MainWindow()
@@ -25,10 +31,43 @@ MainWindow::~MainWindow()
 void MainWindow::on_submitButton_clicked()
 {
     // Get the selected alpha value
-    QString alpha = ui->comboBox->currentText();
+    int alpha = ui->comboBox->currentText().toInt();
 
-    // Print the alpha value to the terminal
+    // Process the alpha value
+    processAlpha(alpha);
+
+    // Print the alpha value to the terminal once
     qDebug() << "Selected alpha value:" << alpha;
+
+    // Terminate the application
+    QApplication::quit();
 }
 
+// Define the function to process the alpha value
+void MainWindow::processAlpha(int alpha)
+{
+    switch(alpha)
+    {
+        case 1:
+            qDebug() << "Processing alpha = 1: Performing action for alpha 1.";
+            break;
+        case 2:
+            qDebug() << "Processing alpha = 2: Performing action for alpha 2.";
+            break;
+        case 3:
+            qDebug() << "Processing alpha = 3: Performing action for alpha 3.";
+            break;
+        default:
+            qDebug() << "Unknown alpha value.";
+            break;
+    }
+}
+
+int main(int argc, char *argv[])
+{
+    QApplication a(argc, argv);
+    MainWindow w;
+    w.show();
+    return a.exec();
+}
 

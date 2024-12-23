@@ -24,8 +24,7 @@ DEFINES += QT_DEPRECATED_WARNINGS
 
 
 SOURCES += \
-  src/graphic_mainwindow.cpp \
-  src/graphic_main.cpp
+  src/graphic_mainwindow.cpp 
 
 HEADERS += \
   include/graphic_mainwindow.h

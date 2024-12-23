@@ -20,6 +20,8 @@ private slots:
 
 private:
     Ui::MainWindow *ui;
+
+    void processAlpha(int alpha); // Function prototype
 };
 
 #endif // MAINWINDOW_H
