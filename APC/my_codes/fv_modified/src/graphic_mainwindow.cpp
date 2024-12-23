@@ -3,6 +3,7 @@
 
 #include <QDebug>
 #include <QApplication>
+#include <iostream>
 #include <armadillo>
 #include <vector>
 
@@ -189,6 +190,92 @@ void MainWindow::processAlpha(int a_size)
 		 num_iter
 		 );
 
+	// main GPU kernel
+	gpuKernel(y_n_real,
+			  y_n_imag,
+			  X_real,
+			  X_imag,
+			  R_real,
+			  R_imag,
+			  Ss_real,
+			  Ss_imag,
+			  s_real,
+			  s_imag, 
+			  alpha_real,
+			  output_real,
+			  output_imag, 
+
+			  batch_size, 
+			  data_num + 1, 
+			  y_n_size, 
+			  X_size, 
+			  R_row, 
+			  Ss_size, 
+			  s_size, 
+			  alpha_size, 
+			  num_iter
+			  );
+
+
+	// store result of GPU in an armadillo cx_mat variable
+	arma::mat real_part(output_real, X_size, data_num * batch_size); 
+	arma::mat imag_part(output_imag, X_size, data_num * batch_size); 
+	gpu_apc = arma::cx_mat(real_part, imag_part);
+	gpu_apc = gpu_apc.st();
+
+	// load output result of Matlab calculation to check our result
+/*	arma::cx_mat gpu_apc; 
+	arma::mat gpu_apc_real; 
+	arma::mat gpu_apc_imag; 
+
+	name_i = "./data_result/Result" + name + "_I.csv"; 
+	gpu_apc_real.load(name_i, arma::csv_ascii); 
+
+	name_q = "./data_result/Result" + name + "_Q.csv"; 
+	gpu_apc_imag.load(name_q, arma::csv_ascii); 
+
+	gpu_apc = arma::cx_mat(gpu_apc_real, gpu_apc_imag);  // gpu apc shape: data_num * out_size: (99 * 87)
+*/
+
+	// =======================================
+	while (my_indx < y_noisy2.n_cols) {  
+	
+		// print output
+		/*std::cout << "y_noisy : " << std::endl; 
+		for(int i=0; i<y_noisy2.n_rows; i++){
+			for(int j=0; j<y_noisy2.n_cols; j++){
+				std::cout << "out(" << i << ", " << j << "): ";
+				std::cout << y_noisy2(i,j) << "\n";
+			}
+			std::cout << std::endl;
+		}*/
+
+
+		General_APC apc;
+
+		y_noisy = y_noisy2.col(my_indx); 
+		cx_mat result_apc = apc.algorithm(s, y_noisy, 13, alpha, sigma);
+
+		std::cout << "my_indx: " << my_indx << std::endl; 
+
+		double mse = calc_mse(gpu_apc, result_apc.st(), my_indx , out_len);
+
+		std::cout << "MSE: " << mse << std::endl;
+		std::cout << "----------" << std::endl; 
+
+
+/*		result_apc = result_apc.st(); 
+		std::cout << "result_apc : " << std::endl; 
+		for(int i=0; i<result_apc.n_rows; i++){
+			for(int j=0; j<result_apc.n_cols; j++){
+				std::cout << "out(" << i << ", " << j << "): ";
+				std::cout << result_apc(i,j) << "\n";
+			}
+			std::cout << std::endl;
+		}*/
+
+		my_indx ++; // go to the next data row
+	}
 }
 
 int main(int argc, char *argv[])

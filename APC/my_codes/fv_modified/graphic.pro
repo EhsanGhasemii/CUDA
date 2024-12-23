@@ -23,13 +23,38 @@ DEFINES += QT_DEPRECATED_WARNINGS
 #DEFINES += QT_DISABLE_DEPRECATED_BEFORE=0x060000    # disables all the APIs deprecated before Qt 6.0.0
 
 
+###################################################
+# CUDA settings -- 
+CUDA_DIR = /usr
+SYSTEM_TYPE = 64
+NVCC_OPTIONS = --use_fast_math
+INCLUDEPATH += $$CUDA_DIR/include
+LIBS += -L$$CUDA_DIR/lib64 -lcudart
+CUDA_SOURCES += src/cuda_main.cu
+
+CUDA_OBJECTS_DIR = ./cuda_objects
+system(mkdir -p $$CUDA_OBJECTS_DIR)
+
+cuda.input = CUDA_SOURCES
+cuda.output = $$CUDA_OBJECTS_DIR/${QMAKE_FILE_BASE}_cuda.o
+cuda.commands = $$CUDA_DIR/bin/nvcc -c $$NVCC_OPTIONS $$CUDA_INC $$LIBS --machine $$SYSTEM_TYPE -arch=sm_75 -o ${QMAKE_FILE_OUT} ${QMAKE_FILE_NAME}
+cuda.dependency_type = TYPE_C
+QMAKE_EXTRA_COMPILERS += cuda
+###################################################
+
+
 SOURCES += \
   src/graphic_mainwindow.cpp \
+	src/general_apc.cpp \
 	src/gpuFunctions.cpp
 
 HEADERS += \
   include/graphic_mainwindow.h \
-	include/gpuFunctions.h
+	include/gpuFunctions.h \
+	include/cuda_main.h \
+	include/gpuerrors.h \
+	include/gputimer.h \ 
+	include/general_apc.h 
 
 FORMS += \
   include/graphic_mainwindow.ui
