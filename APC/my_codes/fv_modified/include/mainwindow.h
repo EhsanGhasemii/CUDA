@@ -7,8 +7,6 @@
 
 double calc_mse (cx_mat data1, cx_mat data2, int row, int col_size);
 
-
-
 cx_mat s;
 cx_mat y_noisy; 
 // modifying ======================

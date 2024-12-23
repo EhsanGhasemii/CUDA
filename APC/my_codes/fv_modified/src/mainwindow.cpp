@@ -64,9 +64,6 @@ int main() {
 
 	my_vec.push_back(y_noisy2); 
 
-
-	
-
 	// start coding CUDA =============================
     int temp=0;
     s.resize(13,1);

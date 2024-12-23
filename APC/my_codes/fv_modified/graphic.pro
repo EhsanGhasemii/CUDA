@@ -24,10 +24,12 @@ DEFINES += QT_DEPRECATED_WARNINGS
 
 
 SOURCES += \
-  src/graphic_mainwindow.cpp 
+  src/graphic_mainwindow.cpp \
+	src/gpuFunctions.cpp
 
 HEADERS += \
-  include/graphic_mainwindow.h
+  include/graphic_mainwindow.h \
+	include/gpuFunctions.h
 
 FORMS += \
   include/graphic_mainwindow.ui
