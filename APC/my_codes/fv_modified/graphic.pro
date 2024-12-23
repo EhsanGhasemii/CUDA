@@ -31,7 +31,7 @@ HEADERS += \
   include/graphic_mainwindow.h
 
 FORMS += \
-  files/graphic_mainwindow.ui
+  include/graphic_mainwindow.ui
 
 # Default rules for deployment.
 qnx: target.path = /tmp/$${TARGET}/bin
