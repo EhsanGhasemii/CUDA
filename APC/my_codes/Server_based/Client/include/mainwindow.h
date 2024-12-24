@@ -82,11 +82,11 @@ public:
 
 private:
     Ui::MainWindow *ui;
-
     QTcpSocket             *socket                   {nullptr};
     QTimer                 *timer                    {nullptr};
     ClientData              clientData                        ;
     QByteArray              receiveData                       ;
+    int a_size; 
 
 
 
@@ -114,5 +114,6 @@ private slots:
     void disconnected();
     void readyReadData();
     void timerTrigged();
+    void on_submitButton_clicked();
 };
 #endif // MAINWINDOW_H

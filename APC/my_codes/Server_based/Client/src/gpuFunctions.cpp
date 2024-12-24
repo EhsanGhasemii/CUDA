@@ -127,6 +127,7 @@ void fun1(cx_mat s,
 			*output_imag = (double*)malloc(batch_size * data_num * X_size * sizeof(double));	// size: batch_size * data_num * X_size
 
 			// check size of the variables
+      std::cout << "alpha size: " << alpha_size << std::endl; 
 			std::cout << "num_iter: " << num_iter << std::endl; 
 			std::cout << "batch_size: " << batch_size << std::endl; 
 			std::cout << "data_num: " << data_num - 1 << std::endl; 

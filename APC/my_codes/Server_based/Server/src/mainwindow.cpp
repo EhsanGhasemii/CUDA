@@ -1,7 +1,6 @@
 #include "../include/mainwindow.h"
 #include "ui_mainwindow.h"
 
-
 // function2 for MSE calculation between an array and a cx_mat
 double calc_mse (arma::cx_mat data1, arma::cx_mat data2, int row, int col_size) {
         /* We suppose that size of data1 is n * m and

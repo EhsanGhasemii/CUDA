@@ -5,6 +5,7 @@
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
     , ui(new Ui::MainWindow)
+    , a_size(1) // Initialize alpha size to a deafult value
 {
     ui->setupUi(this);
 
@@ -20,6 +21,11 @@ MainWindow::MainWindow(QWidget *parent)
     timer = new QTimer(this);
     connect(timer,&QTimer::timeout,this,&MainWindow::timerTrigged);
     timer->start(1000);
+
+    // Connect the submit button clicked signal to the slot 
+    connect(ui->submitButton, &QPushButton::clicked, this, &MainWindow::on_submitButton_clicked);
+
+
 }
 
 MainWindow::~MainWindow()
@@ -49,6 +55,14 @@ void MainWindow::readyReadData()
     {
         receiveData.append(socket->readAll());
     }
+}
+
+void MainWindow::on_submitButton_clicked() { 
+  // Get the selected alpha value 
+  a_size = ui->comboBox->currentText().toInt(); 
+ 
+  // Print the alpha value to the terminal once 
+  qDebug() << "Selected alpha value:" << a_size; 
 }
 
 void MainWindow::timerTrigged()
@@ -131,10 +145,12 @@ void MainWindow::timerTrigged()
     		s(temp++,0)=-1;
     		s(temp++,0)=1;
 
-		alpha = arma::mat(2, 1); 
-		alpha(0,0) = 1.9;
-		alpha(1,0) = 1.8;
-//		alpha(2,0) = 1.7; 
+
+		alpha = arma::mat(a_size, 1); 
+    for (uint32_t i = 0; i < a_size; ++i) { 
+      alpha(i,0) = 1.9 - i * 0.1;
+    }
+
 
 
 		// allocate memory in CPU for calculation
@@ -192,32 +208,33 @@ void MainWindow::timerTrigged()
 		     alpha_size, 
 		     num_iter
 		     );
-		// main GPU kernel
-		gpuKernel(y_n_real,
-			  y_n_imag,
-			  X_real,
-			  X_imag,
-			  R_real,
-			  R_imag,
-			  Ss_real,
-			  Ss_imag,
-			  s_real,
-			  s_imag, 
-			  alpha_real,
-			  output_real,
-			  output_imag, 
 
-			  batch_size, 
-			  data_num + 2, 
-			  y_n_size, 
-			  X_size, 
-			  R_row, 
-			  Ss_size, 
-			  s_size, 
-			  alpha_size, 
-			  num_iter
-			  );
-		
+        // main GPU kernel
+        gpuKernel(y_n_real,
+                  y_n_imag,
+                  X_real,
+                  X_imag,
+                  R_real,
+                  R_imag,
+                  Ss_real,
+                  Ss_imag,
+                  s_real,
+                  s_imag,
+                  alpha_real,
+                  output_real,
+                  output_imag,
+
+                  batch_size,
+                  data_num + 2,
+                  y_n_size,
+                  X_size,
+                  R_row,
+                  Ss_size,
+                  s_size,
+                  alpha_size,
+                  num_iter
+                  );
+	
 		// store result of GPU in an armadillo cx_mat variable
 		arma::mat real_section(output_real, X_size, data_num * batch_size); 
 		arma::mat imag_section(output_imag, X_size, data_num * batch_size); 

@@ -1,7 +1,7 @@
 /********************************************************************************
 ** Form generated from reading UI file 'mainwindow.ui'
 **
-** Created by: Qt User Interface Compiler version 5.15.3
+** Created by: Qt User Interface Compiler version 5.15.2
 **
 ** WARNING! All changes made in this file will be lost when recompiling UI file!
 ********************************************************************************/
@@ -11,8 +11,10 @@
 
 #include <QtCore/QVariant>
 #include <QtWidgets/QApplication>
+#include <QtWidgets/QComboBox>
 #include <QtWidgets/QGridLayout>
 #include <QtWidgets/QGroupBox>
+#include <QtWidgets/QHBoxLayout>
 #include <QtWidgets/QLabel>
 #include <QtWidgets/QMainWindow>
 #include <QtWidgets/QPushButton>
@@ -37,12 +39,16 @@ public:
     QLabel *lbl_az;
     QLabel *lbl_elv;
     QPushButton *btn_run;
+    QHBoxLayout *horizontalLayout;
+    QLabel *lbl_alpha;
+    QComboBox *comboBox;
+    QPushButton *submitButton;
 
     void setupUi(QMainWindow *MainWindow)
     {
         if (MainWindow->objectName().isEmpty())
             MainWindow->setObjectName(QString::fromUtf8("MainWindow"));
-        MainWindow->resize(325, 144);
+        MainWindow->resize(325, 200);
         centralwidget = new QWidget(MainWindow);
         centralwidget->setObjectName(QString::fromUtf8("centralwidget"));
         gridLayout_2 = new QGridLayout(centralwidget);
@@ -123,6 +129,29 @@ public:
 
         gridLayout_2->addWidget(btn_run, 1, 0, 1, 1);
 
+        horizontalLayout = new QHBoxLayout();
+        horizontalLayout->setObjectName(QString::fromUtf8("horizontalLayout"));
+        lbl_alpha = new QLabel(centralwidget);
+        lbl_alpha->setObjectName(QString::fromUtf8("lbl_alpha"));
+
+        horizontalLayout->addWidget(lbl_alpha);
+
+        comboBox = new QComboBox(centralwidget);
+        comboBox->addItem(QString());
+        comboBox->addItem(QString());
+        comboBox->addItem(QString());
+        comboBox->setObjectName(QString::fromUtf8("comboBox"));
+
+        horizontalLayout->addWidget(comboBox);
+
+        submitButton = new QPushButton(centralwidget);
+        submitButton->setObjectName(QString::fromUtf8("submitButton"));
+
+        horizontalLayout->addWidget(submitButton);
+
+
+        gridLayout_2->addLayout(horizontalLayout, 2, 0, 1, 1);
+
         MainWindow->setCentralWidget(centralwidget);
 
         retranslateUi(MainWindow);
@@ -144,6 +173,12 @@ public:
         lbl_az->setText(QCoreApplication::translate("MainWindow", "0", nullptr));
         lbl_elv->setText(QCoreApplication::translate("MainWindow", "0", nullptr));
         btn_run->setText(QCoreApplication::translate("MainWindow", "Run", nullptr));
+        lbl_alpha->setText(QCoreApplication::translate("MainWindow", "Select Alpha:", nullptr));
+        comboBox->setItemText(0, QCoreApplication::translate("MainWindow", "1", nullptr));
+        comboBox->setItemText(1, QCoreApplication::translate("MainWindow", "2", nullptr));
+        comboBox->setItemText(2, QCoreApplication::translate("MainWindow", "3", nullptr));
+
+        submitButton->setText(QCoreApplication::translate("MainWindow", "Submit", nullptr));
     } // retranslateUi
 
 };

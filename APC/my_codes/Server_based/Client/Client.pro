@@ -15,9 +15,8 @@ DEFINES += QT_DEPRECATED_WARNINGS
 # You can also select to disable deprecated APIs only up to a certain version of Qt.
 #DEFINES += QT_DISABLE_DEPRECATED_BEFORE=0x060000    # disables all the APIs deprecated before Qt 6.0.0
 
-
 ###################################################
-# CUDA settings -- 
+# CUDA settings --
 CUDA_DIR = /usr
 SYSTEM_TYPE = 64
 NVCC_OPTIONS = --use_fast_math
@@ -34,11 +33,6 @@ cuda.commands = $$CUDA_DIR/bin/nvcc -c $$NVCC_OPTIONS $$CUDA_INC $$LIBS --machin
 cuda.dependency_type = TYPE_C
 QMAKE_EXTRA_COMPILERS += cuda
 ###################################################
-
-
-
-
-
 
 SOURCES += \
     src/main.cpp \
