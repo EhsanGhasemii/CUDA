@@ -17,7 +17,7 @@ DEFINES += QT_DEPRECATED_WARNINGS
 
 ###################################################
 # CUDA settings --
-CUDA_DIR = /usr
+CUDA_DIR = /usr/local/cuda-12.6
 SYSTEM_TYPE = 64
 NVCC_OPTIONS = --use_fast_math
 INCLUDEPATH += $$CUDA_DIR/include
